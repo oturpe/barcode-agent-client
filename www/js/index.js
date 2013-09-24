@@ -117,7 +117,8 @@ var app = (function() {
                     log('Response received:');
                     log(response);
 
-                    document.getElementById('postresult').innerHTML = response;
+                    //document.getElementById('postresult').innerHTML = response;
+                    window.location = "productView.html";
                 }
             };
 
