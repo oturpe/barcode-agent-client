@@ -4,8 +4,8 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
 
     // Server URL components
-    var URL = 'http://koti.kapsi.fi/~oturpe/test/test.cgi';
-    var PRODUCTS_URL = '/products';
+    var URL = 'http://koti.kapsi.fi/~oturpe/barcode-agent';
+    var PRODUCTS_URL = '/products.cgi';
 
     // Last read bar code
     var barcode = undefined;
