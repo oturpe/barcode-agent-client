@@ -70,15 +70,15 @@ var app = (function() {
         try {
             scanner.scan(function(result) {
                 log('Scanner result: \n' +
-                        'text: ' +
-                        result.text +
-                        '\n' +
-                        'format: ' +
-                        result.format +
-                        '\n' +
-                        'cancelled: ' +
-                        result.cancelled +
-                        '\n');
+                    'text: ' +
+                    result.text +
+                    '\n' +
+                    'format: ' +
+                    result.format +
+                    '\n' +
+                    'cancelled: ' +
+                    result.cancelled +
+                    '\n');
 
                 barcode = result.text;
                 document.getElementById('scanresult').innerHTML = barcode;
@@ -146,7 +146,7 @@ var app = (function() {
         } catch(ex) {
             log(ex.message);
         }
-    }
+    };
 
     // Switches virtual page within the single page model. Context parameter
     // is a JS object containing page-specific initialization data.
@@ -176,9 +176,6 @@ var app = (function() {
 
     // Publish interface
     return {
-        initialize: initialize,
-        bindEvents: bindEvents,
-        onDeviceReady: onDeviceReady,
-        receivedEvent: receivedEvent
-    }
+        initialize: initialize
+    };
 })();
