@@ -117,8 +117,7 @@ var app = (function() {
                     log('Response received:');
                     log(response);
 
-                    //document.getElementById('postresult').innerHTML = response;
-                    window.location = "productView.html";
+                    gotoPage('productview',JSON.parse(response));
                 }
             };
 
@@ -148,6 +147,32 @@ var app = (function() {
             log(ex.message);
         }
     }
+
+    // Switches virtual page within the single page model. Context parameter
+    // is a JS object containing page-specific initialization data.
+    var gotoPage = function(id,context) {
+        var nameElement, commentsElement, commentObject, commentElement, comments, i, commentsLength;
+
+        if(id !== 'productview') {
+            log('Unknown page id: ' + id);
+            return;
+        }
+
+        nameElement = document.getElementById('productname');
+        nameElement.innerHTML = context.name;
+
+        commentsElement = document.getElementById('productcomments');
+        log('commentsElement:' + commentsElement);
+
+        comments = context.comments;
+        commentsLength = comments.length;
+        for(i = 0; i < commentsLength; i += 1) {
+            commentObject = comments[i];
+            commentElement = document.createElement('p');
+            commentElement.innerHTML = commentObject.text;
+            commentsElement.appendChild(commentElement);
+        }
+    };
 
     // Publish interface
     return {
