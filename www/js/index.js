@@ -154,11 +154,13 @@ var app = (function() {
     var gotoPage = function(id,context) {
         var handler = gotoPage.handlers[id];
 
-        if(id === undefined) {
-            log('Unknown page id: ' + id);
+        if(handler === undefined) {
+            log('ERROR: Cannot open page with unknown page id: ' + id);
             return;
         }
 
+        log('Opening page with id ' + id);
+        
         handler(context);
     };
 
