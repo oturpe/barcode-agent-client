@@ -7,11 +7,8 @@ var app = (function() {
     var URL = 'http://koti.kapsi.fi/~oturpe/barcode-agent';
     var PRODUCTS_URL = '/newproduct.cgi';
 
-    // Last read bar code
-    var barcode = undefined;
-
     // Creates REST URL for given product ID
-    var toProductURL = function() {
+    var toProductURL = function(barcode) {
         return URL + PRODUCTS_URL + '/' + barcode;
     };
 
@@ -80,19 +77,16 @@ var app = (function() {
                     result.cancelled +
                     '\n');
 
-                barcode = result.text;
-                document.getElementById('scanresult').innerHTML = barcode;
+                post(result.text);
             },function(error) {
                 log('Scanning failed: ',error);
             });
         } catch(ex) {
             log(ex.message);
         }
-
-        log('stored barcode: ' + barcode);
     };
 
-    var post = function() {
+    var post = function(barcode) {
         var request;
         var response;
 
