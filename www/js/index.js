@@ -33,9 +33,6 @@ var app = (function() {
 
         scanButton = document.getElementById('scanbutton');
         scanButton.addEventListener('click',scan,false);
-
-        postButton = document.getElementById('postbutton');
-        postButton.addEventListener('click',post,false);
     };
 
     // deviceready Event Handler
