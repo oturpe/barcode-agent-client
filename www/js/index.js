@@ -5,7 +5,7 @@ var app = (function() {
 
     // Server URL components
     var URL = 'http://koti.kapsi.fi/~oturpe/barcode-agent';
-    var PRODUCTS_URL = '/products.cgi';
+    var PRODUCTS_URL = '/newproduct.cgi';
 
     // Last read bar code
     var barcode = undefined;
@@ -118,6 +118,10 @@ var app = (function() {
                     log(response);
 
                     gotoPage('productview',JSON.parse(response));
+                } else if(request.status === 404) {
+                    gotoPage('productadd',{
+                        barcode: barcode
+                    });
                 }
             };
 
@@ -150,13 +154,25 @@ var app = (function() {
 
     // Switches virtual page within the single page model. Context parameter
     // is a JS object containing page-specific initialization data.
+    //
+    // Initialization of page with given id is handled by specialized handler
+    // function, registered in gotoPage.handlers object.
     var gotoPage = function(id,context) {
-        var nameElement, commentsElement, commentObject, commentElement, comments, i, commentsLength;
+        var handler = gotoPage.handlers[id];
 
-        if(id !== 'productview') {
+        if(id === undefined) {
             log('Unknown page id: ' + id);
             return;
         }
+
+        handler(context);
+    };
+
+    gotoPage.handlers = {};
+
+    // Handler for product view.
+    gotoPage.handlers['productview'] = function(context) {
+        var nameElement, commentsElement, commentObject, commentElement, comments, i, commentsLength;
 
         nameElement = document.getElementById('productname');
         nameElement.innerHTML = context.name;
@@ -172,6 +188,16 @@ var app = (function() {
             commentElement.innerHTML = commentObject.text;
             commentsElement.appendChild(commentElement);
         }
+    };
+
+    gotoPage.handlers['productadd'] = function(context) {
+        var idElement;
+
+        idElement = document.getElementById('newproductid');
+        idElement.value = context.barcode;
+        idElement.readOnly = true;
+        // TODO: Images
+        // TODO: Posting the form
     };
 
     // Publish interface
