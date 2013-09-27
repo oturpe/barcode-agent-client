@@ -113,7 +113,7 @@ var app = (function() {
 
                     gotoPage('productview',JSON.parse(response));
                 } else if(request.status === 404) {
-                    gotoPage('productadd',{
+                    gotoPage('productnew',{
                         barcode: barcode
                     });
                 }
@@ -184,10 +184,10 @@ var app = (function() {
         }
     };
 
-    gotoPage.handlers['productadd'] = function(context) {
+    gotoPage.handlers['productnew'] = function(context) {
         var idElement;
 
-        idElement = document.getElementById('newproductid');
+        idElement = document.getElementById('productnewid');
         idElement.value = context.barcode;
         idElement.readOnly = true;
         // TODO: Images
