@@ -7,6 +7,9 @@ var app = (function() {
     var URL = 'http://koti.kapsi.fi/~oturpe/barcode-agent';
     var PRODUCTS_URL = '/newproduct.cgi';
 
+    // Variable storing details about new product
+    var newProductInfo = null;
+
     // Creates REST URL for given product ID
     var toProductURL = function(barcode) {
         return URL + PRODUCTS_URL + '/' + barcode;
@@ -16,23 +19,57 @@ var app = (function() {
         console.log('BA: ' + message);
     };
 
+    // Creates URL-encoded string from given object, suitable for http
+    // get and post queries.
+    var toQueryString = function(obj) {
+        var query = '';
+        var key;
+        var keys = Object.keys(obj);
+        var length = keys.length;
+        var i;
+
+        for(i = 0; i < length; i++) {
+            key = keys[i];
+
+            if(i > 0)
+                query += '&';
+
+            query += key + '=' + encodeURIComponent(obj[key]);
+        }
+
+        return query;
+    };
+
     // Application Constructor
     var initialize = function() {
         bindEvents();
     };
 
     // Bind Event Listeners
-    //
-    // Bind any events that are required on startup. Common events are:
-    // 'load', 'deviceready', 'offline', and 'online'.
     var bindEvents = function() {
-        var scanButton;
-        var postButton;
+        var scanButton, newProductControls = {};
 
         document.addEventListener('deviceready',onDeviceReady,false);
 
         scanButton = document.getElementById('scanbutton');
         scanButton.addEventListener('click',scan,false);
+
+        newProductControls.barcode = document.getElementById('productnewid');
+        newProductControls.name = document.getElementById('productnewname');
+        newProductControls.submit = document.getElementById('productnewsubmit');
+
+        newProductControls.name.addEventListener('change',function() {
+            newProductInfo.name = this.value;
+        },false);
+
+        // Note: Barcode does not need change event listener as it is not to be
+        // edited by user.
+
+        newProductControls.submit.addEventListener('click',function() {
+            submit(newProductInfo.barcode,
+                   newProductInfo.name,
+                   newProductInfo.user);
+        },false);
     };
 
     // deviceready Event Handler
@@ -104,44 +141,57 @@ var app = (function() {
 
                 if(request.status === 200) {
                     response = request.responseText;
-
-                    log('Response received:');
-                    log(response);
-
                     gotoPage('productview',JSON.parse(response));
                 } else if(request.status === 404) {
                     gotoPage('productnew',{
                         barcode: barcode
                     });
+                } else {
+                    log('ERROR: Unexpected status code ' + request.status);
                 }
             };
 
             request.send(null);
-
-            // Not needed now, maybe later?
-            /*
-            function toQueryString(obj) {
-              var query = '';
-              var key;
-              var keys =  Object.keys(obj);
-              var length = keys.length;
-              var i;
-
-              for(i=0; i<length; i++) {
-                key = keys[i];
-
-                if(i>0)
-                  query += '&';
-
-                query += key + '=' + encodeURIComponent(obj[key]);
-
-              }
-            }
-            */
         } catch(ex) {
             log(ex.message);
         }
     };
+
+    // Submits new product to server.
+    var submit = function(barcode,productName,user) {
+
+        log('At submit method');
+        log('barcode: ' + barcode);
+        log('name: ' + productName);
+        log('user: ' + user);
+
+        var request, response, productInfo;
+
+        try {
+            request = new XMLHttpRequest();
+            // request.open('POST',URL + PRODUCTS_URL,true);
+            request.open('POST',URL + '/products.cgi',true);
+
+            request.onreadystatechange = function() {
+                if(request.readyState !== 4)
+                    return;
+
+                if(request.status === 200)
+                    log('Product added');
+                else
+                    log('ERROR: Unexpected status code ' + request.status);
+            };
+
+            productInfo = {
+                barcode: barcode,name: productName
+            };
+            // TODO: Image
+
+            request.send(toQueryString(productInfo));
+        } catch(ex) {
+            log(ex.message);
+        }
+    }
 
     // Switches virtual page within the single page model. Context parameter
     // is a JS object containing page-specific initialization data.
@@ -199,11 +249,15 @@ var app = (function() {
     gotoPage.handlers['productnew'] = function(context) {
         var idElement;
 
+        newProductInfo = {
+            barcode: context.barcode
+        };
+
         idElement = document.getElementById('productnewid');
-        idElement.value = context.barcode;
+        idElement.value = newProductInfo.barcode;
         idElement.readOnly = true;
-        // TODO: Images
-        // TODO: Posting the form
+
+        // TODO: Image
     };
 
     // Publish interface
