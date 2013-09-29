@@ -157,23 +157,23 @@ var app = (function() {
         }
 
         log('Opening page with id ' + id);
-        
-        gotoPage.pages.forEach(function (item) {
-            item.style.display = item.id===id ? 'block' : 'none';
+
+        gotoPage.pages.forEach(function(item) {
+            item.style.display = item.id === id ? 'block' : 'none';
         });
-        
+
         handler(context);
     };
 
     gotoPage.pages = [];
-    
+
     var pageNodes = document.querySelectorAll(".page");
     var max = pageNodes.length;
     for(i = 0; i < max; i += 1) {
         gotoPage.pages.push(pageNodes.item(i));
         log(gotoPage.pages[i].id);
     }
-    
+
     gotoPage.handlers = {};
 
     // Handler for product view.
