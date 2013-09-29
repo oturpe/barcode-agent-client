@@ -111,7 +111,7 @@ var app = (function() {
                     result.cancelled +
                     '\n');
 
-                post(result.text);
+                requestInfo(result.text);
             },function(error) {
                 log('Scanning failed: ',error);
             });
@@ -120,12 +120,13 @@ var app = (function() {
         }
     };
 
-    var post = function(barcode) {
+    // Retrieves product information for the server.
+    var requestInfo = function(barcode) {
         var request;
         var response;
 
         if(!barcode) {
-            log('ERROR: Called "post" without barcode');
+            log('ERROR: Called "requestInfo" without barcode');
             return;
         }
 
