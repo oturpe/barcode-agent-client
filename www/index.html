@@ -17,6 +17,9 @@
         </div>
 
         <!-- Note: Controls are always visible. -->
+        <div id="settingscontrols" class="controls">
+            <button id="settingsbutton">settings</button>
+        </div>
         <div id="scancontrols" class="controls">
             <button id="scanbutton">scan</button>
         </div>
@@ -38,6 +41,16 @@
                 <!-- TODO: Images -->
                 <input id="productnewsubmit" type="button"
                     value="Submit">
+            </form>
+        </div>
+        
+        <div id="settings" class="page">
+            <h1>Application settings</h1>
+            <form>
+                <div id="debugsettings">
+                    <label for="serverurl">Server URL: </label> <input
+                        id="serverurl" name="serverurl" type="url">
+                </div>
             </form>
         </div>
     </div>
