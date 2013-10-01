@@ -46,6 +46,7 @@ var app = (function() {
 
     // Application Constructor
     var initialize = function() {
+        gotoPage('intro');
         bindEvents();
     };
 
@@ -242,6 +243,10 @@ var app = (function() {
 
     gotoPage.handlers = {};
 
+    gotoPage.handlers['intro'] = function(context) {
+        // Nothing to do, just static text.    
+    }
+    
     // Handler for product view.
     gotoPage.handlers['productview'] = function(context) {
         var nameElement, commentsElement, commentObject, commentElement, comments, i, commentsLength;
