@@ -4,9 +4,9 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
 
     var config = {
-         serverUrl: 'http://koti.kapsi.fi/~oturpe/barcode-agent'
+        serverUrl: 'http://koti.kapsi.fi/~oturpe/barcode-agent'
     };
-    
+
     // Server URL components
     var PRODUCTS_URL = '/newproduct.cgi';
 
@@ -55,7 +55,7 @@ var app = (function() {
         document.addEventListener('deviceready',onDeviceReady,false);
 
         settingsButton = document.getElementById('settingsbutton');
-        settingsButton.addEventListener('click',function () {
+        settingsButton.addEventListener('click',function() {
             gotoPage('settings');
         },false);
 
@@ -78,7 +78,7 @@ var app = (function() {
                    newProductInfo.name,
                    newProductInfo.user);
         },false);
-        
+
         serverUrlInput = document.getElementById('serverurl');
         serverUrlInput.addEventListener('change',function() {
             log('Setting server URL to "' + this.value + '"');
@@ -144,7 +144,7 @@ var app = (function() {
             return;
         }
 
-        log('posting');
+        log('Requesting info from ' + config.serverUrl);
 
         try {
             request = new XMLHttpRequest();
@@ -274,10 +274,10 @@ var app = (function() {
 
         // TODO: Image
     };
-    
+
     gotoPage.handlers['settings'] = function(context) {
         var urlButton;
-        
+
         urlButton = document.getElementById('serverurl');
         urlButton.value = config.serverUrl;
     };
