@@ -2,6 +2,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 
 // Application module
 var app = (function() {
+    'use strict';
 
     var config = {
         serverUrl: 'http://koti.kapsi.fi/~oturpe/barcode-agent'
