@@ -50,8 +50,7 @@ var app = (function() {
 
     // Bind Event Listeners
     var bindEvents = function() {
-        var scanButton, newProductControls = {};
-        var settingsButton;
+        var scanButton, settingsButton, serverUrlInput, newProductControls = {};
 
         document.addEventListener('deviceready',onDeviceReady,false);
 
@@ -78,6 +77,12 @@ var app = (function() {
             submit(newProductInfo.barcode,
                    newProductInfo.name,
                    newProductInfo.user);
+        },false);
+        
+        serverUrlInput = document.getElementById('serverurl');
+        serverUrlInput.addEventListener('change',function() {
+            log('Setting server URL to "' + this.value + '"');
+            config.serverUrl = this.value;
         },false);
     };
 
@@ -180,7 +185,7 @@ var app = (function() {
         try {
             request = new XMLHttpRequest();
             // request.open('POST',URL + PRODUCTS_URL,true);
-            request.open('POST',URL + '/products.cgi',true);
+            request.open('POST',config.serverUrl + '/products.cgi',true);
 
             request.onreadystatechange = function() {
                 if(request.readyState !== 4)
