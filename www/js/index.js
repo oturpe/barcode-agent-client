@@ -146,7 +146,7 @@ var app = (function() {
             return;
         }
 
-        log('Requesting info from ' + config.serverUrl);
+        log('Requesting info from ' + toProductURL(barcode));
 
         try {
             request = new XMLHttpRequest();
