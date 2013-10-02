@@ -9,7 +9,7 @@ var app = (function() {
     };
 
     // Server URL components
-    var PRODUCTS_URL = '/newproduct.cgi';
+    var PRODUCTS_URL = '/products';
 
     // Variable storing details about new product
     var newProductInfo = null;
