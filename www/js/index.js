@@ -4,8 +4,17 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var config = {
-        serverUrl: 'http://koti.kapsi.fi/~oturpe/barcode-agent'
+    // Returns stored value of given key, or default value if none exists.
+    var getStoredItem = function(key) {
+        var value;
+
+        value = localStorage.getItem(key);
+        log('Accessing storage: ' + key + ': ' + value);
+
+        return value ? value : getStoredItem.defaults[key];
+    };
+    getStoredItem.defaults = {
+        'serverUrl': 'http://barcodeagent.nodejitsu.com'
     };
 
     // Server URL components
@@ -16,7 +25,7 @@ var app = (function() {
 
     // Creates REST URL for given product ID
     var toProductURL = function(barcode) {
-        return config.serverUrl + PRODUCTS_URL + '/' + barcode;
+        return localStorage.getItem('serverUrl') + PRODUCTS_URL + '/' + barcode;
     };
 
     var log = function(message) {
@@ -84,7 +93,7 @@ var app = (function() {
         serverUrlInput = document.getElementById('serverurl');
         serverUrlInput.addEventListener('change',function() {
             log('Setting server URL to "' + this.value + '"');
-            config.serverUrl = this.value;
+            localStorage.setItem('serverUrl',this.value);
         },false);
     };
 
@@ -186,8 +195,7 @@ var app = (function() {
 
         try {
             request = new XMLHttpRequest();
-            // request.open('POST',URL + PRODUCTS_URL,true);
-            request.open('POST',config.serverUrl + '/products.cgi',true);
+            request.open('POST',getStoredItem('serverUrl') + PRODUCTS_URL,true);
 
             request.onreadystatechange = function() {
                 if(request.readyState !== 4)
@@ -285,7 +293,7 @@ var app = (function() {
         var urlButton;
 
         urlButton = document.getElementById('serverurl');
-        urlButton.value = config.serverUrl;
+        urlButton.value = localStorage.getItem('serverUrl');
     };
 
     // Publish interface
