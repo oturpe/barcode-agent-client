@@ -244,9 +244,9 @@ var app = (function() {
     gotoPage.handlers = {};
 
     gotoPage.handlers['intro'] = function(context) {
-        // Nothing to do, just static text.    
+    // Nothing to do, just static text.
     }
-    
+
     // Handler for product view.
     gotoPage.handlers['productview'] = function(context) {
         var nameElement, commentsElement, commentObject, commentElement, comments, i, commentsLength;
