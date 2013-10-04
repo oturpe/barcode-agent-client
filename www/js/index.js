@@ -1,13 +1,22 @@
+/*
+ * global console: false, document: false, XMLHttpRequest: false, localStorage:
+ * false
+ */
+
+var scanner, logger, settings, app;
+
 var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 
 // Logger module
 //
 // Thin wrapper around console.log method.
 var logger = (function() {
+    'use strict';
+
     var log = function(message) {
         console.log('BA: ' + message);
     };
-    
+
     return {
         log: log
     };
@@ -18,16 +27,18 @@ var logger = (function() {
 // Thin wrapper around localStorage, providing defaults for missing values.
 //
 // Depends on a logger.
-var settings = (function(logger){
+var settings = (function(logger) {
     'use strict';
-    
+
+    var defaults, getItem, setItem;
+
     // Default values for item missing from store.
-    var defaults = {
+    defaults = {
         'serverUrl': 'http://barcodeagent.nodejitsu.com'
     };
-    
+
     // Returns stored value of given key, or default value if none exists.
-    var getItem = function(key) {
+    getItem = function(key) {
         var value;
 
         value = localStorage.getItem(key);
@@ -35,46 +46,43 @@ var settings = (function(logger){
 
         return value ? value : defaults[key];
     };
-    
-    var setItem = function(key,value) {
-        localStorage.setItem(key,value);  
+
+    setItem = function(key,value) {
+        localStorage.setItem(key,value);
     };
-    
+
     return {
-        getItem: getItem,
-        setItem: setItem
+        getItem: getItem,setItem: setItem
     };
 })(logger);
 
 // Barcode Agent application module
 //
 // Depends on:
-//     - logger
-//     - settings
+// - logger
+// - settings
 var app = (function(logger,settings) {
     'use strict';
 
+    var PRODUCTS_URL, newProductInfo, toProductURL, toQueryString, initialize, bindEvents, onDeviceReady, bindEvents, receivedEvent, scan, submit, requestInfo, gotoPage;
+
     // Server URL components
-    var PRODUCTS_URL = '/products';
+    PRODUCTS_URL = '/products';
 
     // Variable storing details about new product
-    var newProductInfo = null;
+    newProductInfo = null;
 
     // Creates REST URL for given product ID
-    var toProductURL = function(barcode) {
+    toProductURL = function(barcode) {
         return settings.getItem('serverUrl') + PRODUCTS_URL + '/' + barcode;
     };
 
     // Creates URL-encoded string from given object, suitable for http
     // get and post queries.
-    var toQueryString = function(obj) {
-        var query = '';
-        var key;
-        var keys = Object.keys(obj);
-        var length = keys.length;
-        var i;
+    toQueryString = function(obj) {
+        var query = '', key, keys = Object.keys(obj), length = keys.length, i;
 
-        for(i = 0; i < length; i++) {
+        for(i = 0; i < length; i += 1) {
             key = keys[i];
 
             if(i > 0)
@@ -87,13 +95,13 @@ var app = (function(logger,settings) {
     };
 
     // Application Constructor
-    var initialize = function() {
+    initialize = function() {
         gotoPage('intro');
         bindEvents();
     };
 
     // Bind Event Listeners
-    var bindEvents = function() {
+    bindEvents = function() {
         var scanButton, settingsButton, serverUrlInput, newProductControls = {};
 
         document.addEventListener('deviceready',onDeviceReady,false);
@@ -135,15 +143,15 @@ var app = (function(logger,settings) {
     // The scope of 'this' is the event. In order to call the
     // 'receivedEvent'
     // function, we must explicitly call 'app.receivedEvent(...);'
-    var onDeviceReady = function() {
+    onDeviceReady = function() {
         receivedEvent('deviceready');
     };
 
     // Update DOM on a Received Event
-    var receivedEvent = function(id) {
-        var parentElement = document.getElementById(id);
-        var listeningElement = parentElement.querySelector('.listening');
-        var receivedElement = parentElement.querySelector('.received');
+    receivedEvent = function(id) {
+        var parentElement = document.getElementById(id), listeningElement = parentElement
+                .querySelector('.listening'), receivedElement = parentElement
+                .querySelector('.received');
 
         listeningElement.setAttribute('style','display:none;');
         receivedElement.setAttribute('style','display:block;');
@@ -154,20 +162,20 @@ var app = (function(logger,settings) {
     // Scan barcode
     //
     // Calls barcode scanner plugin code.
-    var scan = function() {
+    scan = function() {
         logger.log('scanning');
         try {
             scanner.scan(function(result) {
                 logger.log('Scanner result: \n' +
-                    'text: ' +
-                    result.text +
-                    '\n' +
-                    'format: ' +
-                    result.format +
-                    '\n' +
-                    'cancelled: ' +
-                    result.cancelled +
-                    '\n');
+                           'text: ' +
+                           result.text +
+                           '\n' +
+                           'format: ' +
+                           result.format +
+                           '\n' +
+                           'cancelled: ' +
+                           result.cancelled +
+                           '\n');
 
                 requestInfo(result.text);
             },function(error) {
@@ -179,9 +187,8 @@ var app = (function(logger,settings) {
     };
 
     // Retrieves product information for the server.
-    var requestInfo = function(barcode) {
-        var request;
-        var response;
+    requestInfo = function(barcode) {
+        var request, response;
 
         if(!barcode) {
             logger.log('ERROR: Called "requestInfo" without barcode');
@@ -206,7 +213,8 @@ var app = (function(logger,settings) {
                         barcode: barcode
                     });
                 } else {
-                    logger.log('ERROR: Unexpected status code ' + request.status);
+                    logger.log('ERROR: Unexpected status code ' +
+                               request.status);
                 }
             };
 
@@ -217,7 +225,7 @@ var app = (function(logger,settings) {
     };
 
     // Submits new product to server.
-    var submit = function(barcode,productName,user) {
+    submit = function(barcode,productName,user) {
 
         logger.log('At submit method');
         logger.log('barcode: ' + barcode);
@@ -228,7 +236,9 @@ var app = (function(logger,settings) {
 
         try {
             request = new XMLHttpRequest();
-            request.open('POST',getStoredItem('serverUrl') + PRODUCTS_URL,true);
+            request.open('POST',
+                         settings.getItem('serverUrl') + PRODUCTS_URL,
+                         true);
 
             request.onreadystatechange = function() {
                 if(request.readyState !== 4)
@@ -237,7 +247,8 @@ var app = (function(logger,settings) {
                 if(request.status === 200)
                     logger.log('Product added');
                 else
-                    logger.log('ERROR: Unexpected status code ' + request.status);
+                    logger.log('ERROR: Unexpected status code ' +
+                               request.status);
             };
 
             productInfo = {
@@ -249,14 +260,14 @@ var app = (function(logger,settings) {
         } catch(ex) {
             logger.log(ex.message);
         }
-    }
+    };
 
     // Switches virtual page within the single page model. Context parameter
     // is a JS object containing page-specific initialization data.
     //
     // Initialization of page with given id is handled by specialized handler
     // function, registered in gotoPage.handlers object.
-    var gotoPage = function(id,context) {
+    gotoPage = function(id,context) {
         var handler = gotoPage.handlers[id];
 
         if(handler === undefined) {
@@ -277,6 +288,7 @@ var app = (function(logger,settings) {
 
     var pageNodes = document.querySelectorAll(".page");
     var max = pageNodes.length;
+    var i;
     for(i = 0; i < max; i += 1) {
         gotoPage.pages.push(pageNodes.item(i));
         logger.log(gotoPage.pages[i].id);
@@ -286,7 +298,7 @@ var app = (function(logger,settings) {
 
     gotoPage.handlers['intro'] = function(context) {
     // Nothing to do, just static text.
-    }
+    };
 
     // Handler for product view.
     gotoPage.handlers['productview'] = function(context) {
