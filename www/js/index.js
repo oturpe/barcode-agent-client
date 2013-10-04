@@ -1,21 +1,58 @@
 var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 
-// Application module
-var app = (function() {
-    'use strict';
+// Logger module
+//
+// Thin wrapper around console.log method.
+var logger = (function() {
+    var log = function(message) {
+        console.log('BA: ' + message);
+    };
+    
+    return {
+        log: log
+    };
+})();
 
+// A module for storing application settings.
+//
+// Thin wrapper around localStorage, providing defaults for missing values.
+//
+// Depends on a logger.
+var settings = (function(logger){
+    'use strict';
+    
+    // Default values for item missing from store.
+    var defaults = {
+        'serverUrl': 'http://barcodeagent.nodejitsu.com'
+    };
+    
     // Returns stored value of given key, or default value if none exists.
-    var getStoredItem = function(key) {
+    var getItem = function(key) {
         var value;
 
         value = localStorage.getItem(key);
-        log('Accessing storage: ' + key + ': ' + value);
+        logger.log('Accessing storage: ' + key + ': ' + value);
 
-        return value ? value : getStoredItem.defaults[key];
+        return value ? value : defaults[key];
     };
-    getStoredItem.defaults = {
-        'serverUrl': 'http://barcodeagent.nodejitsu.com'
+    
+    var setItem = function(key,value) {
+        localStorage.setItem(key,value);  
     };
+    
+    return {
+        getItem: getItem,
+        setItem: setItem
+    };
+})(logger);
+
+// Barcode Agent application module
+//
+// Depends on:
+//     - logger
+//     - settings
+var app = (function(logger,settings) {
+    'use strict';
 
     // Server URL components
     var PRODUCTS_URL = '/products';
@@ -25,11 +62,7 @@ var app = (function() {
 
     // Creates REST URL for given product ID
     var toProductURL = function(barcode) {
-        return localStorage.getItem('serverUrl') + PRODUCTS_URL + '/' + barcode;
-    };
-
-    var log = function(message) {
-        console.log('BA: ' + message);
+        return settings.getItem('serverUrl') + PRODUCTS_URL + '/' + barcode;
     };
 
     // Creates URL-encoded string from given object, suitable for http
@@ -92,8 +125,8 @@ var app = (function() {
 
         serverUrlInput = document.getElementById('serverurl');
         serverUrlInput.addEventListener('change',function() {
-            log('Setting server URL to "' + this.value + '"');
-            localStorage.setItem('serverUrl',this.value);
+            logger.log('Setting server URL to "' + this.value + '"');
+            settings.setItem('serverUrl',this.value);
         },false);
     };
 
@@ -115,17 +148,17 @@ var app = (function() {
         listeningElement.setAttribute('style','display:none;');
         receivedElement.setAttribute('style','display:block;');
 
-        log('Received Event: ' + id);
+        logger.log('Received Event: ' + id);
     };
 
     // Scan barcode
     //
     // Calls barcode scanner plugin code.
     var scan = function() {
-        log('scanning');
+        logger.log('scanning');
         try {
             scanner.scan(function(result) {
-                log('Scanner result: \n' +
+                logger.log('Scanner result: \n' +
                     'text: ' +
                     result.text +
                     '\n' +
@@ -138,10 +171,10 @@ var app = (function() {
 
                 requestInfo(result.text);
             },function(error) {
-                log('Scanning failed: ',error);
+                logger.log('Scanning failed: ',error);
             });
         } catch(ex) {
-            log(ex.message);
+            logger.log(ex.message);
         }
     };
 
@@ -151,11 +184,11 @@ var app = (function() {
         var response;
 
         if(!barcode) {
-            log('ERROR: Called "requestInfo" without barcode');
+            logger.log('ERROR: Called "requestInfo" without barcode');
             return;
         }
 
-        log('Requesting info from ' + toProductURL(barcode));
+        logger.log('Requesting info from ' + toProductURL(barcode));
 
         try {
             request = new XMLHttpRequest();
@@ -173,23 +206,23 @@ var app = (function() {
                         barcode: barcode
                     });
                 } else {
-                    log('ERROR: Unexpected status code ' + request.status);
+                    logger.log('ERROR: Unexpected status code ' + request.status);
                 }
             };
 
             request.send(null);
         } catch(ex) {
-            log(ex.message);
+            logger.log(ex.message);
         }
     };
 
     // Submits new product to server.
     var submit = function(barcode,productName,user) {
 
-        log('At submit method');
-        log('barcode: ' + barcode);
-        log('name: ' + productName);
-        log('user: ' + user);
+        logger.log('At submit method');
+        logger.log('barcode: ' + barcode);
+        logger.log('name: ' + productName);
+        logger.log('user: ' + user);
 
         var request, response, productInfo;
 
@@ -202,9 +235,9 @@ var app = (function() {
                     return;
 
                 if(request.status === 200)
-                    log('Product added');
+                    logger.log('Product added');
                 else
-                    log('ERROR: Unexpected status code ' + request.status);
+                    logger.log('ERROR: Unexpected status code ' + request.status);
             };
 
             productInfo = {
@@ -214,7 +247,7 @@ var app = (function() {
 
             request.send(toQueryString(productInfo));
         } catch(ex) {
-            log(ex.message);
+            logger.log(ex.message);
         }
     }
 
@@ -227,11 +260,11 @@ var app = (function() {
         var handler = gotoPage.handlers[id];
 
         if(handler === undefined) {
-            log('ERROR: Cannot open page with unknown page id: ' + id);
+            logger.log('ERROR: Cannot open page with unknown page id: ' + id);
             return;
         }
 
-        log('Opening page with id ' + id);
+        logger.log('Opening page with id ' + id);
 
         gotoPage.pages.forEach(function(item) {
             item.style.display = item.id === id ? 'block' : 'none';
@@ -246,7 +279,7 @@ var app = (function() {
     var max = pageNodes.length;
     for(i = 0; i < max; i += 1) {
         gotoPage.pages.push(pageNodes.item(i));
-        log(gotoPage.pages[i].id);
+        logger.log(gotoPage.pages[i].id);
     }
 
     gotoPage.handlers = {};
@@ -263,7 +296,7 @@ var app = (function() {
         nameElement.innerHTML = context.name;
 
         commentsElement = document.getElementById('productcomments');
-        log('commentsElement:' + commentsElement);
+        logger.log('commentsElement:' + commentsElement);
 
         comments = context.comments;
         commentsLength = comments.length;
@@ -293,11 +326,11 @@ var app = (function() {
         var urlButton;
 
         urlButton = document.getElementById('serverurl');
-        urlButton.value = localStorage.getItem('serverUrl');
+        urlButton.value = settings.getItem('serverUrl');
     };
 
     // Publish interface
     return {
         initialize: initialize
     };
-})();
+})(logger,settings);
