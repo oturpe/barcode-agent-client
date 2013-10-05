@@ -1,70 +1,117 @@
-/*
- * global console: false, document: false, XMLHttpRequest: false, localStorage:
- * false
- */
+/*global window, document, XMLHttpRequest */
 
 var scanner, logger, settings, app;
 
 var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 
-// Logger module
-//
-// Thin wrapper around console.log method.
-var logger = (function() {
-    'use strict';
-
-    var log = function(message) {
-        console.log('BA: ' + message);
-    };
-
-    return {
-        log: log
-    };
-})();
-
-// A module for storing application settings.
-//
-// Thin wrapper around localStorage, providing defaults for missing values.
-//
-// Depends on a logger.
-var settings = (function(logger) {
-    'use strict';
-
-    var defaults, getItem, setItem;
-
-    // Default values for item missing from store.
-    defaults = {
-        'serverUrl': 'http://barcodeagent.nodejitsu.com'
-    };
-
-    // Returns stored value of given key, or default value if none exists.
-    getItem = function(key) {
-        var value;
-
-        value = localStorage.getItem(key);
-        logger.log('Accessing storage: ' + key + ': ' + value);
-
-        return value ? value : defaults[key];
-    };
-
-    setItem = function(key,value) {
-        localStorage.setItem(key,value);
-    };
-
-    return {
-        getItem: getItem,setItem: setItem
-    };
-})(logger);
-
 // Barcode Agent application module
 //
-// Depends on:
-// - logger
-// - settings
-var app = (function(logger,settings) {
+// Contains and exposes all components of the application.
+var app = (function() {
     'use strict';
 
-    var PRODUCTS_URL, newProductInfo, toProductURL, toQueryString, initialize, bindEvents, onDeviceReady, bindEvents, receivedEvent, scan, submit, requestInfo, gotoPage;
+    var Logger, Settings, PageView, logger, defaultSettings, settings, pageView, PRODUCTS_URL, newProductInfo, toProductURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo;
+
+    // Logger constructor
+    //
+    // Thin wrapper around console.log method.
+    Logger = function(prefix,baseLogger) {
+        this.baseLogger = baseLogger;
+        this.prefix = prefix || '';
+
+        return this;
+    };
+
+    Logger.prototype = {
+        log: function(message) {
+            this.baseLogger.log(this.prefix + ' ' + message);
+        }
+    };
+
+    // Application settings constructor.
+    //
+    // Thin wrapper around localStorage, providing defaults for missing values.
+    //
+    // Depends on a logger.
+    Settings = function(logger,storage,defaults) {
+        this.logger = logger;
+        this.storage = storage;
+        // Default values for item missing from store.
+        this.defaults = defaults || {};
+
+        return this;
+    };
+
+    Settings.prototype = {
+        // Stores value
+        setItem: function(key,value) {
+            this.storage.setItem(key,value);
+        },
+        // Returns stored value of given key, or default value if none exists.
+        getItem: function(key) {
+            var value;
+
+            value = this.storage.getItem(key);
+            this.logger.log('Accessing storage: ' + key + ': ' + value);
+
+            return value ? value : this.defaults[key];
+        }
+    };
+
+    // Contains all pages within one virtual page and allows switching between
+    // them.
+    //
+    // Initialization of page with given id is handled by specialized
+    // handler function, registered with addPage method.
+    PageView = function(logger) {
+        this.logger = logger;
+        this.handlers = {};
+        this.pages = [];
+    };
+
+    PageView.prototype = {
+        // Adds page to the list of registered pages and assiciated given
+        // initializer and on-display handler with it.
+        addPage: function(page,init,onDisplay) {
+            this.pages.push(page);
+            this.logger.log('Added page ' + page.id + ' to page list');
+
+            // TODO Implement init
+            
+            onDisplay = onDisplay || function() {};
+            this.handlers[page.id] = onDisplay;
+        },
+
+        // Switches virtual page within the single page model. Context parameter
+        // is a JS object containing page-specific initialization data.
+        //
+        // Pages are referred to by their id's.
+        gotoPage: function(id,context) {
+            var thePage,handler;
+            
+            handler = this.handlers[id];
+
+            if(handler === undefined) {
+                this.logger.log('ERROR: ' +
+                                'Cannot open page with unknown page id: ' +
+                                id);
+                return;
+            }
+
+            this.logger.log('Opening page with id ' + id);
+
+            this.pages.forEach(function(page) {
+                if(page.id === id) {
+                    thePage = page;
+                    page.style.display = 'block';
+                } else {
+                    page.style.display = 'none';
+                }
+            });
+
+            handler(thePage,context);
+        }
+    };
 
     // Server URL components
     PRODUCTS_URL = '/products';
@@ -96,8 +143,69 @@ var app = (function(logger,settings) {
 
     // Application Constructor
     initialize = function() {
-        gotoPage('intro');
+        var page;
+
+        defaultSettings = {
+            'serverUrl': 'http://barcodeagent.nodejitsu.com'
+        };
+
+        logger = new Logger('BA',window.console);
+        settings = new Settings(logger,window.localStorage,defaultSettings);
+        pageView = new PageView(logger);
+
         bindEvents();
+
+        page = document.querySelector('.page#intro');
+        pageView.addPage(page);
+
+        // Handler for product view.
+        page = document.querySelector('.page#productview');
+        pageView
+                .addPage(page,
+                    null,
+                    function(page,context) {
+                        var nameElement, commentsElement, commentObject, commentElement, comments, i, commentsLength;
+
+                        nameElement = page.querySelector('#productname');
+                        nameElement.innerHTML = context.name;
+
+                        commentsElement = page.querySelector('#productcomments');
+                        logger.log('commentsElement:' + commentsElement);
+
+                        comments = context.comments;
+                        commentsLength = comments.length;
+                        for(i = 0; i < commentsLength; i += 1) {
+                            commentObject = comments[i];
+                            commentElement = document.createElement('p');
+                            commentElement.innerHTML = commentObject.text;
+                            commentsElement.appendChild(commentElement);
+                        }
+                    });
+
+        page = document.querySelector('.page#productnew');
+        pageView.addPage(page,null,function(page,context) {
+            var idElement;
+
+            newProductInfo = {
+                barcode: context.barcode
+            };
+
+            idElement = page.querySelector('#productnewid');
+            idElement.value = newProductInfo.barcode;
+            idElement.readOnly = true;
+
+            // TODO: Image
+        });
+
+        page = document.querySelector('.page#settings');
+        pageView.addPage(page,null,function(page,context) {
+            var urlButton;
+
+            urlButton = page.querySelector('#serverurl');
+            urlButton.value = settings.getItem('serverUrl');
+        });
+
+        pageView.gotoPage('intro');
     };
 
     // Bind Event Listeners
@@ -108,7 +216,7 @@ var app = (function(logger,settings) {
 
         settingsButton = document.getElementById('settingsbutton');
         settingsButton.addEventListener('click',function() {
-            gotoPage('settings');
+            pageView.gotoPage('settings');
         },false);
 
         scanButton = document.getElementById('scanbutton');
@@ -127,8 +235,8 @@ var app = (function(logger,settings) {
 
         newProductControls.submit.addEventListener('click',function() {
             submit(newProductInfo.barcode,
-                   newProductInfo.name,
-                   newProductInfo.user);
+                newProductInfo.name,
+                newProductInfo.user);
         },false);
 
         serverUrlInput = document.getElementById('serverurl');
@@ -207,9 +315,9 @@ var app = (function(logger,settings) {
 
                 if(request.status === 200) {
                     response = request.responseText;
-                    gotoPage('productview',JSON.parse(response));
+                    pageView.gotoPage('productview',JSON.parse(response));
                 } else if(request.status === 404) {
-                    gotoPage('productnew',{
+                    pageView.gotoPage('productnew',{
                         barcode: barcode
                     });
                 } else {
@@ -237,18 +345,19 @@ var app = (function(logger,settings) {
         try {
             request = new XMLHttpRequest();
             request.open('POST',
-                         settings.getItem('serverUrl') + PRODUCTS_URL,
-                         true);
+                settings.getItem('serverUrl') + PRODUCTS_URL,
+                true);
 
             request.onreadystatechange = function() {
                 if(request.readyState !== 4)
                     return;
 
-                if(request.status === 200)
+                if(request.status === 200) {
                     logger.log('Product added');
-                else
+                } else {
                     logger.log('ERROR: Unexpected status code ' +
                                request.status);
+                }
             };
 
             productInfo = {
@@ -262,87 +371,11 @@ var app = (function(logger,settings) {
         }
     };
 
-    // Switches virtual page within the single page model. Context parameter
-    // is a JS object containing page-specific initialization data.
-    //
-    // Initialization of page with given id is handled by specialized handler
-    // function, registered in gotoPage.handlers object.
-    gotoPage = function(id,context) {
-        var handler = gotoPage.handlers[id];
-
-        if(handler === undefined) {
-            logger.log('ERROR: Cannot open page with unknown page id: ' + id);
-            return;
-        }
-
-        logger.log('Opening page with id ' + id);
-
-        gotoPage.pages.forEach(function(item) {
-            item.style.display = item.id === id ? 'block' : 'none';
-        });
-
-        handler(context);
-    };
-
-    gotoPage.pages = [];
-
-    var pageNodes = document.querySelectorAll(".page");
-    var max = pageNodes.length;
-    var i;
-    for(i = 0; i < max; i += 1) {
-        gotoPage.pages.push(pageNodes.item(i));
-        logger.log(gotoPage.pages[i].id);
-    }
-
-    gotoPage.handlers = {};
-
-    gotoPage.handlers['intro'] = function(context) {
-    // Nothing to do, just static text.
-    };
-
-    // Handler for product view.
-    gotoPage.handlers['productview'] = function(context) {
-        var nameElement, commentsElement, commentObject, commentElement, comments, i, commentsLength;
-
-        nameElement = document.getElementById('productname');
-        nameElement.innerHTML = context.name;
-
-        commentsElement = document.getElementById('productcomments');
-        logger.log('commentsElement:' + commentsElement);
-
-        comments = context.comments;
-        commentsLength = comments.length;
-        for(i = 0; i < commentsLength; i += 1) {
-            commentObject = comments[i];
-            commentElement = document.createElement('p');
-            commentElement.innerHTML = commentObject.text;
-            commentsElement.appendChild(commentElement);
-        }
-    };
-
-    gotoPage.handlers['productnew'] = function(context) {
-        var idElement;
-
-        newProductInfo = {
-            barcode: context.barcode
-        };
-
-        idElement = document.getElementById('productnewid');
-        idElement.value = newProductInfo.barcode;
-        idElement.readOnly = true;
-
-        // TODO: Image
-    };
-
-    gotoPage.handlers['settings'] = function(context) {
-        var urlButton;
-
-        urlButton = document.getElementById('serverurl');
-        urlButton.value = settings.getItem('serverUrl');
-    };
-
     // Publish interface
     return {
+        Logger: Logger,
+        Settings: Settings,
+        PageView: PageView,
         initialize: initialize
     };
-})(logger,settings);
+})();
