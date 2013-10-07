@@ -188,22 +188,48 @@ var app = (function() {
                     });
 
         page = document.querySelector('.page#productnew');
-        pageView.addPage(page,null,function(page,context) {
-            var idElement;
+        pageView.addPage(page,
+            function(page) {
+                var nameElement,submitElement;
+                
+                nameElement = page.querySelector('#productnewname');
+                submitElement = page.querySelector('#productnewsubmit');
 
-            newProductInfo = {
-                barcode: context.barcode
-            };
+                nameElement.addEventListener('change',function() {
+                    newProductInfo.name = this.value;
+                },false);
 
-            idElement = page.querySelector('#productnewid');
-            idElement.value = newProductInfo.barcode;
-            idElement.readOnly = true;
+                // Note: Barcode does not need change event listener as it is
+                // not to be edited by user.
 
-            // TODO: Image
-        });
+                submitElement.addEventListener('click',function() {
+                    submit(newProductInfo.barcode,
+                        newProductInfo.name,
+                        newProductInfo.user);
+                },false);
+            },
+            function(page,context) {
+                var idElement;
+
+                newProductInfo = {
+                    barcode: context.barcode
+                };
+
+                idElement = page.querySelector('#productnewid');
+                idElement.value = newProductInfo.barcode;
+                idElement.readOnly = true;
+
+                // TODO: Image
+            });
 
         page = document.querySelector('.page#settings');
-        pageView.addPage(page,null,function(page,context) {
+        pageView.addPage(page,function(page) {
+            var serverUrlInput = document.getElementById('serverurl');
+            serverUrlInput.addEventListener('change',function() {
+                logger.log('Setting server URL to "' + this.value + '"');
+                settings.setItem('serverUrl',this.value);
+            },false);
+        },function(page,context) {
             var urlButton;
 
             urlButton = page.querySelector('#serverurl');
@@ -226,29 +252,6 @@ var app = (function() {
 
         scanButton = document.getElementById('scanbutton');
         scanButton.addEventListener('click',scan,false);
-
-        newProductControls.barcode = document.getElementById('productnewid');
-        newProductControls.name = document.getElementById('productnewname');
-        newProductControls.submit = document.getElementById('productnewsubmit');
-
-        newProductControls.name.addEventListener('change',function() {
-            newProductInfo.name = this.value;
-        },false);
-
-        // Note: Barcode does not need change event listener as it is not to be
-        // edited by user.
-
-        newProductControls.submit.addEventListener('click',function() {
-            submit(newProductInfo.barcode,
-                newProductInfo.name,
-                newProductInfo.user);
-        },false);
-
-        serverUrlInput = document.getElementById('serverurl');
-        serverUrlInput.addEventListener('change',function() {
-            logger.log('Setting server URL to "' + this.value + '"');
-            settings.setItem('serverUrl',this.value);
-        },false);
     };
 
     // deviceready Event Handler
