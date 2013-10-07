@@ -76,8 +76,6 @@ var app = (function() {
             this.pages.push(page);
             this.logger.log('Added page ' + page.id + ' to page list');
 
-            // TODO Implement init
-
             onDisplay = onDisplay || function() {};
             this.handlers[page.id] = onDisplay;
 
@@ -164,63 +162,55 @@ var app = (function() {
 
         // Handler for product view.
         page = document.querySelector('.page#productview');
-        pageView
-                .addPage(page,
-                    null,
-                    function(page,context) {
-                        var nameElement, commentsElement, commentObject, commentElement, comments, i, commentsLength;
+        pageView.addPage(page,null,function(page,context) {
+            var commentsElement, comment, commentElement, comments, i, length;
 
-                        nameElement = page.querySelector('#productname');
-                        nameElement.innerHTML = context.name;
+            page.querySelector('#productname').innerHTML = context.name;
 
-                        commentsElement = page
-                                .querySelector('#productcomments');
-                        logger.log('commentsElement:' + commentsElement);
+            commentsElement = page.querySelector('#productcomments');
 
-                        comments = context.comments;
-                        commentsLength = comments.length;
-                        for(i = 0; i < commentsLength; i += 1) {
-                            commentObject = comments[i];
-                            commentElement = document.createElement('p');
-                            commentElement.innerHTML = commentObject.text;
-                            commentsElement.appendChild(commentElement);
-                        }
-                    });
+            comments = context.comments;
+            length = comments.length;
+            for(i = 0; i < length; i += 1) {
+                comment = comments[i];
+                commentElement = document.createElement('p');
+                commentElement.innerHTML = comment.text;
+                commentsElement.appendChild(commentElement);
+            }
+        });
 
         page = document.querySelector('.page#productnew');
-        pageView.addPage(page,
-            function(page) {
-                var nameElement,submitElement;
-                
-                nameElement = page.querySelector('#productnewname');
-                submitElement = page.querySelector('#productnewsubmit');
+        pageView.addPage(page,function(page) {
+            var nameElement, submitElement;
 
-                nameElement.addEventListener('change',function() {
-                    newProductInfo.name = this.value;
-                },false);
+            nameElement = page.querySelector('#productnewname');
+            submitElement = page.querySelector('#productnewsubmit');
 
-                // Note: Barcode does not need change event listener as it is
-                // not to be edited by user.
+            nameElement.addEventListener('change',function() {
+                newProductInfo.name = this.value;
+            },false);
 
-                submitElement.addEventListener('click',function() {
-                    submit(newProductInfo.barcode,
-                        newProductInfo.name,
-                        newProductInfo.user);
-                },false);
-            },
-            function(page,context) {
-                var idElement;
+            // Note: Barcode does not need change event listener as it is
+            // not to be edited by user.
 
-                newProductInfo = {
-                    barcode: context.barcode
-                };
+            submitElement.addEventListener('click',function() {
+                submit(newProductInfo.barcode,
+                    newProductInfo.name,
+                    newProductInfo.user);
+            },false);
+        },function(page,context) {
+            var idElement;
 
-                idElement = page.querySelector('#productnewid');
-                idElement.value = newProductInfo.barcode;
-                idElement.readOnly = true;
+            newProductInfo = {
+                barcode: context.barcode
+            };
 
-                // TODO: Image
-            });
+            idElement = page.querySelector('#productnewid');
+            idElement.value = newProductInfo.barcode;
+            idElement.readOnly = true;
+
+            // TODO: Image
+        });
 
         page = document.querySelector('.page#settings');
         pageView.addPage(page,function(page) {
@@ -245,7 +235,7 @@ var app = (function() {
 
         document.addEventListener('deviceready',function() {
             var parentElement, listeningElement, receivedElement;
-            
+
             parentElement = document.getElementById('deviceready');
             listeningElement = parentElement.querySelector('.listening');
             receivedElement = parentElement.querySelector('.received');
