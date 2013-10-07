@@ -77,9 +77,13 @@ var app = (function() {
             this.logger.log('Added page ' + page.id + ' to page list');
 
             // TODO Implement init
-            
+
             onDisplay = onDisplay || function() {};
             this.handlers[page.id] = onDisplay;
+
+            if(init) {
+                init(page);
+            }
         },
 
         // Switches virtual page within the single page model. Context parameter
@@ -87,8 +91,8 @@ var app = (function() {
         //
         // Pages are referred to by their id's.
         gotoPage: function(id,context) {
-            var thePage,handler;
-            
+            var thePage, handler;
+
             handler = this.handlers[id];
 
             if(handler === undefined) {
@@ -169,7 +173,8 @@ var app = (function() {
                         nameElement = page.querySelector('#productname');
                         nameElement.innerHTML = context.name;
 
-                        commentsElement = page.querySelector('#productcomments');
+                        commentsElement = page
+                                .querySelector('#productcomments');
                         logger.log('commentsElement:' + commentsElement);
 
                         comments = context.comments;
