@@ -243,7 +243,18 @@ var app = (function() {
     bindEvents = function() {
         var scanButton, settingsButton, serverUrlInput, newProductControls = {};
 
-        document.addEventListener('deviceready',onDeviceReady,false);
+        document.addEventListener('deviceready',function() {
+            var parentElement, listeningElement, receivedElement;
+            
+            parentElement = document.getElementById('deviceready');
+            listeningElement = parentElement.querySelector('.listening');
+            receivedElement = parentElement.querySelector('.received');
+
+            listeningElement.setAttribute('style','display:none;');
+            receivedElement.setAttribute('style','display:block;');
+
+            logger.log('Received deviceready event');
+        },false);
 
         settingsButton = document.getElementById('settingsbutton');
         settingsButton.addEventListener('click',function() {
@@ -252,27 +263,6 @@ var app = (function() {
 
         scanButton = document.getElementById('scanbutton');
         scanButton.addEventListener('click',scan,false);
-    };
-
-    // deviceready Event Handler
-    //
-    // The scope of 'this' is the event. In order to call the
-    // 'receivedEvent'
-    // function, we must explicitly call 'app.receivedEvent(...);'
-    onDeviceReady = function() {
-        receivedEvent('deviceready');
-    };
-
-    // Update DOM on a Received Event
-    receivedEvent = function(id) {
-        var parentElement = document.getElementById(id), listeningElement = parentElement
-                .querySelector('.listening'), receivedElement = parentElement
-                .querySelector('.received');
-
-        listeningElement.setAttribute('style','display:none;');
-        receivedElement.setAttribute('style','display:block;');
-
-        logger.log('Received Event: ' + id);
     };
 
     // Scan barcode
