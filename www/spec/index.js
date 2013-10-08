@@ -36,9 +36,7 @@ describe('Barcode Agent',function() {
             logger.alert('Testalert');
             expect(baseLogger.log)
                     .toHaveBeenCalledWith('PREFIX [ALERT] Testalert');
-            expect(notifier.alert).toHaveBeenCalledWith('Testalert',
-                null,
-                'Alert');
+            expect(notifier.alert).toHaveBeenCalledWith('Testalert');
         });
     });
 

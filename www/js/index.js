@@ -14,7 +14,7 @@ var app = (function() {
 
     // Logger constructor
     //
-    // Thin wrapper around console.log method.
+    // Component for logging and notification.
     Logger = function(prefix,baseLogger,notifier) {
         this.prefix = prefix || '';
         this.baseLogger = baseLogger;
@@ -31,7 +31,7 @@ var app = (function() {
         // Logs given message and displays it to the user
         alert: function(message) {
             this.log('[ALERT] ' + message);
-            this.notifier.alert(message,null,'Alert');
+            this.notifier.alert(message);
         }
     };
 
@@ -171,18 +171,18 @@ var app = (function() {
 
     // Application Constructor
     initialize = function() {
-        var page, notifier, settingsButton;
+        var page, notifier, statusbarElement, settingsButton;
 
         defaultSettings = {
             'serverUrl': 'http://barcodeagent.nodejitsu.com'
         };
 
+        statusbarElement = document.getElementById('statusbar');
         // Wraps Cordova notification plugin so that logger can be initialized
         // now without worrying if navigatotr.notification exists yet.
         notifier = {
-            alert: function(message,callback,title,button) {
-                var notification = window.navigator.notification;
-                notification.alert(message,callback,title,button);
+            alert: function(message) {
+                statusbarElement.innerHTML = message;
             }
         };
 
