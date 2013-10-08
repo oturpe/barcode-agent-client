@@ -1,4 +1,4 @@
-/*global describe,beforeEach,it,spyOn,runs,waitsFor,expect,app */
+/*global describe,beforeEach,it,spyOn,runs,waitsFor,expect,jasmine,app */
 describe('Barcode Agent',function() {
     'use strict';
 
@@ -123,6 +123,33 @@ describe('Barcode Agent',function() {
             };
         });
 
+        it('hides added pages',function() {
+            pageView.addPage(testPage);
+            
+            expect(testPage.style.display).toEqual('none');
+        });
+        
+        it('interprets missing initializer as no-op',function() {
+            pageView.addPage(testPage);
+
+            // This test case passes if preceding call simply executes without
+            // exceptions.
+        });
+
+        it('sets default (no-op) on-display handler if none is given',
+            function() {
+                pageView.addPage(testPage);
+
+                expect(pageView.displayHandlers['testpage']).toBeTruthy();
+            });
+
+        it('sets default (no-op) on-hide handler if none is given',
+            function() {
+                pageView.addPage(testPage);
+
+                expect(pageView.hideHandlers['testpage']).toBeTruthy();
+            });
+
         it('invokes initializers on page add',function() {
             var handlerCalled = false;
 
@@ -131,13 +158,6 @@ describe('Barcode Agent',function() {
             });
 
             expect(handlerCalled).toBe(true);
-        });
-
-        it('interprets missing initializer as no-op',function() {
-            pageView.addPage(testPage);
-
-            // This test case passes if preceding call simply executes without
-            // exceptions.
         });
 
         it('invokes ondisplay handler on page open',function() {
@@ -152,13 +172,21 @@ describe('Barcode Agent',function() {
             expect(handlerCalled).toBe(true);
         });
 
-        it('sets default (no-op) on-display handler if none is given',
-            function() {
-                pageView.addPage(testPage);
-
-                expect(pageView.handlers['testpage']).toBeTruthy();
-            });
-
+        it('invokes onhide handler of the previously open page on page open',function() {
+            var onHide;
+            
+            onHide = jasmine.createSpy('onhide');
+            
+            pageView.addPage(testPage,null,null,onHide);
+            pageView.addPage(otherPage1,null,null);
+            pageView.addPage(otherPage2,null,null);
+            
+            pageView.gotoPage('testpage');
+            pageView.gotoPage('otherpage-1');
+            
+            expect(onHide).toHaveBeenCalled();
+        });
+        
         it('displays only selected page on page open',function() {
             pageView.addPage(testPage,null,function() {});
             pageView.addPage(otherPage1,null,function() {});

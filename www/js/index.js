@@ -72,21 +72,30 @@ var app = (function() {
     // handler function, registered with addPage method.
     PageView = function(logger) {
         this.logger = logger;
-        this.handlers = {};
+        this.displayHandlers = {};
+        this.hideHandlers = {};
         this.pages = [];
     };
 
     PageView.prototype = {
-        // Adds page to the list of registered pages and assiciated given
-        // initializer and on-display handler with it.
-        addPage: function(page,init,onDisplay) {
+        // Adds page to the list of registered pages and associates given
+        // initializer and on-display and on-hide handlers with it.
+        //
+        // Assumes responsibility for viewing and hiding the page, hiding it
+        // initially. To show the page, see method gotoPage.
+        addPage: function(page,init,onDisplay,onHide) {
             this.pages.push(page);
             this.logger.log('Added page ' + page.id + ' to page list');
             this.currentPageId = undefined;
 
             onDisplay = onDisplay || function() {};
-            this.handlers[page.id] = onDisplay;
+            this.displayHandlers[page.id] = onDisplay;
+            
+            onHide = onHide || function() {};
+            this.hideHandlers[page.id] = onHide; 
 
+            page.style.display = 'none';
+            
             if(init) {
                 init(page);
             }
@@ -96,31 +105,39 @@ var app = (function() {
         // is a JS object containing page-specific initialization data.
         //
         // Pages are referred to by their id's.
-        gotoPage: function(id,context) {
-            var thePage, handler;
+        gotoPage: function(newPageId,context) {
+            var currentPage, newPage, hideHandler, displayHandler, that;
 
-            handler = this.handlers[id];
+            displayHandler = this.displayHandlers[newPageId];
 
-            if(handler === undefined) {
+            if(displayHandler === undefined) {
                 this.logger.log('ERROR: ' +
                                 'Cannot open page with unknown page id: ' +
-                                id);
+                                newPageId);
                 return;
             }
 
-            this.logger.log('Opening page with id ' + id);
+            this.logger.log('Opening page with id ' + newPageId);
 
+            that = this;
             this.pages.forEach(function(page) {
-                if(page.id === id) {
-                    thePage = page;
+                if(page.id === newPageId) {
+                    newPage = page;
                     page.style.display = 'block';
-                } else {
+                } else if(page.id === that.currentPageId) {
+                    currentPage = page;
                     page.style.display = 'none';
                 }
             });
 
-            this.currentPageId = id;
-            handler(thePage,context);
+            // No current page id when the first page is opened
+            if(this.currentPageId) {
+                hideHandler = this.hideHandlers[this.currentPageId];
+                hideHandler(currentPage);
+            }
+
+            this.currentPageId = newPageId;
+            displayHandler(newPage,context);
         }
     };
 
