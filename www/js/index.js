@@ -287,15 +287,17 @@ var app = (function() {
         logger.log('scanning');
         try {
             scanner.scan(function(result) {
+                if(result.cancelled) {
+                    logger.log('Scan cancelled');
+                    return;
+                }
+
                 logger.log('Scanner result: \n' +
                            'text: ' +
                            result.text +
                            '\n' +
                            'format: ' +
                            result.format +
-                           '\n' +
-                           'cancelled: ' +
-                           result.cancelled +
                            '\n');
 
                 requestInfo(result.text);
