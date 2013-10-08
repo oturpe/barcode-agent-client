@@ -193,5 +193,13 @@ describe('Barcode Agent',function() {
                 expect(testPage.received).toBe(true);
                 expect(context.received).toBe(true);
             });
+
+        it('knows currently open page\'s id',function() {
+            pageView.addPage(testPage);
+
+            pageView.gotoPage('testpage');
+
+            expect(pageView.currentPageId).toEqual('testpage');
+        });
     });
 });

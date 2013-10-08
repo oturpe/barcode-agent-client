@@ -82,6 +82,7 @@ var app = (function() {
         addPage: function(page,init,onDisplay) {
             this.pages.push(page);
             this.logger.log('Added page ' + page.id + ' to page list');
+            this.currentPageId = undefined;
 
             onDisplay = onDisplay || function() {};
             this.handlers[page.id] = onDisplay;
@@ -118,6 +119,7 @@ var app = (function() {
                 }
             });
 
+            this.currentPageId = id;
             handler(thePage,context);
         }
     };
