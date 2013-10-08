@@ -216,17 +216,16 @@ var app = (function() {
             },false);
         },
         // Context:
-        //     - barcode: product's barcode (read-only)
-        //     - name: suggestion for product name, user-editable, usually empty
+        // - barcode: product's barcode (read-only)
+        // - name: suggestion for product name, user-editable, usually empty
         function(page,context) {
-            var barcodeElement,nameElement;
+            var barcodeElement, nameElement;
 
-            // Note: newProductInfo is defined at top level and shared 
+            // Note: newProductInfo is defined at top level and shared
             newProductInfo = {
-                barcode: context.barcode,
-                name: context.name
+                barcode: context.barcode,name: context.name
             };
-            
+
             barcodeElement = page.querySelector('#productnewbarcode');
             barcodeElement.value = newProductInfo.barcode;
             barcodeElement.readOnly = true;
