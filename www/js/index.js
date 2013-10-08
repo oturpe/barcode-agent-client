@@ -274,7 +274,17 @@ var app = (function() {
 
         settingsButton = document.getElementById('settingsbutton');
         settingsButton.addEventListener('click',function() {
-            pageView.gotoPage('settings');
+            var atSettings, newPageId;
+            
+            if (pageView.currentPageId === 'settings') {
+                newPageId = 'intro';
+                this.innerHTML = 'view settings';
+            } else {
+                newPageId = 'settings';
+                this.innerHTML = 'hide settings';
+            }
+            
+            pageView.gotoPage(newPageId);
         },false);
 
         scanButton = document.getElementById('scanbutton');
