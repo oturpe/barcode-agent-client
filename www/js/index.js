@@ -15,16 +15,23 @@ var app = (function() {
     // Logger constructor
     //
     // Thin wrapper around console.log method.
-    Logger = function(prefix,baseLogger) {
-        this.baseLogger = baseLogger;
+    Logger = function(prefix,baseLogger,notifier) {
         this.prefix = prefix || '';
+        this.baseLogger = baseLogger;
+        this.notifier = notifier;
 
         return this;
     };
 
     Logger.prototype = {
+        // Silently logs given message
         log: function(message) {
             this.baseLogger.log(this.prefix + ' ' + message);
+        },
+        // Logs given message and displays it to the user
+        alert: function(message) {
+            this.log('[ALERT] ' + message);
+            this.notifier.alert(message,null,'Alert');
         }
     };
 
@@ -145,13 +152,22 @@ var app = (function() {
 
     // Application Constructor
     initialize = function() {
-        var page;
+        var page, notifier;
 
         defaultSettings = {
             'serverUrl': 'http://barcodeagent.nodejitsu.com'
         };
 
-        logger = new Logger('BA',window.console);
+        // Wraps Cordova notification plugin so that logger can be initialized
+        // now without worrying if navigatotr.notification exists yet.
+        notifier = {
+            alert: function(message,callback,title,button) {
+                var notification = window.navigator.notification;
+                notification.alert(message,callback,title,button);
+            }
+        };
+
+        logger = new Logger('BA',window.console,notifier);
         settings = new Settings(logger,window.localStorage,defaultSettings);
         pageView = new PageView(logger);
 
@@ -275,19 +291,21 @@ var app = (function() {
 
                 requestInfo(result.text);
             },function(error) {
-                logger.log('Scanning failed: ',error);
+                logger.alert('Scanning failed: ' + error);
             });
         } catch(ex) {
-            logger.log(ex.message);
+            logger.alert('Internal error: ' + ex.message);
         }
     };
 
-    // Retrieves product information for the server.
+    // Retrieves barcode information for the server. If matching product is
+    // found, takes app to view for that product. If no products are found,
+    // instructs the user to add it to database.
     requestInfo = function(barcode) {
         var request, response;
 
         if(!barcode) {
-            logger.log('ERROR: Called "requestInfo" without barcode');
+            logger.alert('Interal error: Called "requestInfo" without barcode');
             return;
         }
 
@@ -309,14 +327,14 @@ var app = (function() {
                         barcode: barcode
                     });
                 } else {
-                    logger.log('ERROR: Unexpected status code ' +
-                               request.status);
+                    logger.alert('Internal error: Unexpected status code ' +
+                                 request.status);
                 }
             };
 
             request.send(null);
         } catch(ex) {
-            logger.log(ex.message);
+            logger.alert('Internal error: ' + ex.message);
         }
     };
 
@@ -341,10 +359,10 @@ var app = (function() {
                     return;
 
                 if(request.status === 200) {
-                    logger.log('Product added');
+                    logger.alert('Product added');
                 } else {
-                    logger.log('ERROR: Unexpected status code ' +
-                               request.status);
+                    logger.alert('Internal error: Unexpected status code ' +
+                                 request.status);
                 }
             };
 
@@ -355,7 +373,7 @@ var app = (function() {
 
             request.send(toQueryString(productInfo));
         } catch(ex) {
-            logger.log(ex.message);
+            logger.alert('Internal error: ' + ex.message);
         }
     };
 

@@ -2,16 +2,43 @@
 describe('Barcode Agent',function() {
     'use strict';
 
+    var baseLogger, notifier;
+
+    // Set up logger and notifier mocks.
+    beforeEach(function() {
+        baseLogger = {
+            log: function(message) {}
+        };
+
+        notifier = {
+            alert: function(message) {
+                this.message = message;
+            }
+        };
+    });
+
     describe('Logger',function() {
         it('sends prefixed log messages to given base logger',function() {
-            var baseLogger = {
-                log: function(message) {
-                    this.message = message;
-                }
-            }, logger = new app.Logger('PREFIX',baseLogger);
+            var logger = new app.Logger('PREFIX',baseLogger);
+
+            spyOn(baseLogger,'log');
 
             logger.log('Testmessage');
-            expect(baseLogger.message).toEqual('PREFIX Testmessage');
+            expect(baseLogger.log).toHaveBeenCalledWith('PREFIX Testmessage');
+        });
+
+        it('sends alerts to both base logger and notifier',function() {
+            var logger = new app.Logger('PREFIX',baseLogger,notifier);
+
+            spyOn(baseLogger,'log');
+            spyOn(notifier,'alert');
+
+            logger.alert('Testalert');
+            expect(baseLogger.log)
+                    .toHaveBeenCalledWith('PREFIX [ALERT] Testalert');
+            expect(notifier.alert).toHaveBeenCalledWith('Testalert',
+                null,
+                'Alert');
         });
     });
 
