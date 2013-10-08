@@ -222,6 +222,18 @@ describe('Barcode Agent',function() {
                 expect(context.received).toBe(true);
             });
 
+        it('passes page to on-hide handler',function() {
+            pageView.addPage(testPage,null,null,function(page) {
+                page.received = true;
+            });
+            pageView.addPage(otherPage1);
+            
+            pageView.gotoPage('testpage');
+            pageView.gotoPage('otherpage-1');
+
+            expect(testPage.received).toBe(true);
+        });
+
         it('knows currently open page\'s id',function() {
             pageView.addPage(testPage);
 

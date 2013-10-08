@@ -171,7 +171,7 @@ var app = (function() {
 
     // Application Constructor
     initialize = function() {
-        var page, notifier;
+        var page, notifier, settingsButton;
 
         defaultSettings = {
             'serverUrl': 'http://barcodeagent.nodejitsu.com'
@@ -256,17 +256,27 @@ var app = (function() {
         });
 
         page = document.querySelector('.page#settings');
+        settingsButton = document.querySelector('#settingsbutton');
         pageView.addPage(page,function(page) {
             var serverUrlInput = document.getElementById('serverurl');
             serverUrlInput.addEventListener('change',function() {
                 logger.log('Setting server URL to "' + this.value + '"');
                 settings.setItem('serverUrl',this.value);
             },false);
-        },function(page,context) {
-            var urlButton;
+        },
+        // On display handler fills controls with current settings and changes
+        // settings button text.
+        function(page) {
+            var urlInput;
 
-            urlButton = page.querySelector('#serverurl');
-            urlButton.value = settings.getItem('serverUrl');
+            urlInput = page.querySelector('#serverurl');
+            urlInput.value = settings.getItem('serverUrl');
+
+            settingsButton.innerHTML = 'hide settings';
+        },
+        // On hide handler changes settings button text
+        function() {
+            settingsButton.innerHTML = 'view settings';
         });
 
         pageView.gotoPage('intro');
@@ -291,16 +301,14 @@ var app = (function() {
 
         settingsButton = document.getElementById('settingsbutton');
         settingsButton.addEventListener('click',function() {
-            var atSettings, newPageId;
-            
+            var newPageId;
+
             if (pageView.currentPageId === 'settings') {
                 newPageId = 'intro';
-                this.innerHTML = 'view settings';
             } else {
                 newPageId = 'settings';
-                this.innerHTML = 'hide settings';
             }
-            
+
             pageView.gotoPage(newPageId);
         },false);
 
