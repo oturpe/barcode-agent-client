@@ -287,14 +287,13 @@ var app = (function() {
         var scanButton, settingsButton, serverUrlInput, newProductControls = {};
 
         document.addEventListener('deviceready',function() {
-            var parentElement, listeningElement, receivedElement;
+            var statusBarElement,statusTextElement;
 
-            parentElement = document.getElementById('deviceready');
-            listeningElement = parentElement.querySelector('.listening');
-            receivedElement = parentElement.querySelector('.received');
+            statusBarElement = document.getElementById('statusbar');
+            statusBarElement.style.backgroundColor = '#4B946A';
 
-            listeningElement.setAttribute('style','display:none;');
-            receivedElement.setAttribute('style','display:block;');
+            statusTextElement = statusBarElement.querySelector('p');
+            statusTextElement.innerHTML="Device is Ready";
 
             logger.log('Received deviceready event');
         },false);
