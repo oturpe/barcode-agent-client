@@ -371,8 +371,10 @@ var app = (function() {
 
                 if(request.status === 200) {
                     response = request.responseText;
+                    logger.notify('Product found');
                     pageView.gotoPage('productview',JSON.parse(response));
                 } else if(request.status === 404) {
+                    logger.notify('No data available');
                     pageView.gotoPage('productnew',{
                         barcode: barcode
                     });
@@ -382,6 +384,7 @@ var app = (function() {
                 }
             };
 
+            logger.notify('Requesting info...');
             request.send(null);
         } catch(ex) {
             logger.error('Internal error: ' + ex.message);
@@ -409,7 +412,7 @@ var app = (function() {
                     return;
 
                 if(request.status === 200) {
-                    logger.notify('Product added');
+                    logger.notify('Product submitted');
                 } else {
                     logger.error('Internal error: Unexpected status code ' +
                                  request.status);
@@ -421,6 +424,7 @@ var app = (function() {
             };
             // TODO: Image
 
+            logger.notify('Submitting product...');
             request.send(toQueryString(productInfo));
         } catch(ex) {
             logger.error('Internal error: ' + ex.message);
