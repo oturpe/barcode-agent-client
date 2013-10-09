@@ -12,8 +12,7 @@ describe('Barcode Agent',function() {
             };
 
             notifier = {
-                notify: function() {},
-                error: function() {}
+                notify: function(type,message) {}
             };
         });
 
@@ -27,29 +26,21 @@ describe('Barcode Agent',function() {
         });
 
         it('sends notifications to both base logger and notifier',function() {
-            var logger = new app.Logger('PREFIX',baseLogger,notifier);
+            var logger, DELAY, expected;
+
+            logger = new app.Logger('PREFIX',baseLogger,notifier);
+            DELAY = app.Logger.DELAY;
 
             spyOn(baseLogger,'log');
             spyOn(notifier,'notify');
 
-            logger.notify('Testnotify');
-            expect(baseLogger.log)
-                    .toHaveBeenCalledWith('PREFIX [NOTIFICATION] Testnotify');
-            expect(notifier.notify).toHaveBeenCalledWith('Testnotify');
+            logger.notify(DELAY,'Testnotify');
+
+            expected = 'PREFIX [DELAY] Testnotify';
+
+            expect(baseLogger.log).toHaveBeenCalledWith(expected);
+            expect(notifier.notify).toHaveBeenCalledWith(DELAY,'Testnotify');
         });
-        
-        it('sends errors to both base logger and notifier',function() {
-            var logger = new app.Logger('PREFIX',baseLogger,notifier);
-
-            spyOn(baseLogger,'log');
-            spyOn(notifier,'error');
-
-            logger.error('Testerror');
-            expect(baseLogger.log)
-                    .toHaveBeenCalledWith('PREFIX [ERROR] Testerror');
-            expect(notifier.error).toHaveBeenCalledWith('Testerror');
-        });
-
     });
 
     describe('Settings',function() {

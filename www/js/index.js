@@ -23,20 +23,20 @@ var app = (function() {
         return this;
     };
 
+    // Notification types: information, error condition, operation underway
+    Logger.INFO = 'INFO';
+    Logger.ERROR = 'ERROR';
+    Logger.DELAY = 'DELAY';
+
     Logger.prototype = {
         // Silently logs given message
         log: function(message) {
             this.baseLogger.log(this.prefix + ' ' + message);
         },
         // Logs given notification and displays it to the user
-        notify: function(message) {
-            this.log('[NOTIFICATION] ' + message);
-            this.notifier.notify(message);
-        },
-        // Logs given error and displays it to the user
-        error: function(message) {
-            this.log('[ERROR] ' + message);
-            this.notifier.error(message);
+        notify: function(type,message) {
+            this.log('[' + type + '] ' + message);
+            this.notifier.notify(type,message);
         }
     };
 
@@ -186,18 +186,34 @@ var app = (function() {
         // Wraps Cordova notification plugin so that logger can be initialized
         // now without worrying if navigatotr.notification exists yet.
         notifier = {
-            notify: function(message) {
-                // Green color
-                statusTextElement.style.backgroundColor = '#4B946A';
-                statusTextElement.innerHTML = message;
-            },error: function(message) {
-                // Red color
-                statusTextElement.style.backgroundColor = '#C90C22';
+            // Notifies user by showing message in status bar. Different
+            // notification types and represented by different background
+            // colors.
+            notify: function(type,message) {
+                var color;
+                switch(type) {
+                case Logger.INFO:
+                    color = '#4B946A';
+                    break;
+                case Logger.DELAY:
+                    color = '#333333';
+                    break;
+                case Logger.ERROR:
+                    color = '#C90C22';
+                    break;
+                default:
+                    color = '#C90C22';
+                    message = 'Internal error in notifier';
+                    logger.log('Unexpected notification type: ' + type);
+                    break;
+                }
+                
+                statusTextElement.style.backgroundColor = color;
                 statusTextElement.innerHTML = message;
             }
         };
 
-        logger = new Logger('BA',window.console,notifier);
+        logger = new Logger('BarcodeAgent',window.console,notifier);
         settings = new Settings(logger,window.localStorage,defaultSettings);
         pageView = new PageView(logger);
 
@@ -298,7 +314,7 @@ var app = (function() {
         var scanButton, settingsButton, serverUrlInput, newProductControls = {};
 
         document.addEventListener('deviceready',function() {
-            logger.notify('Device is Ready');
+            logger.notify(Logger.INFO,'Device is Ready');
         },false);
 
         settingsButton = document.getElementById('settingsbutton');
@@ -326,7 +342,7 @@ var app = (function() {
         try {
             scanner.scan(function(result) {
                 if(result.cancelled) {
-                    logger.log('Scan cancelled');
+                    logger.notify(Logger.INFO,'Scan cancelled');
                     return;
                 }
 
@@ -340,10 +356,10 @@ var app = (function() {
 
                 requestInfo(result.text);
             },function(error) {
-                logger.error('Scanning failed: ' + error);
+                logger.notify(Logger.ERROR,'Scanning failed: ' + error);
             });
         } catch(ex) {
-            logger.error('Internal error: ' + ex.message);
+            logger.notify(Logger.ERROR,'Internal error: ' + ex.message);
         }
     };
 
@@ -351,10 +367,11 @@ var app = (function() {
     // found, takes app to view for that product. If no products are found,
     // instructs the user to add it to database.
     requestInfo = function(barcode) {
-        var request, response;
+        var request, response, message;
 
         if(!barcode) {
-            logger.error('Interal error: Called "requestInfo" without barcode');
+            message = 'Interal error: Called "requestInfo" without barcode';
+            logger.notify(Logger.ERROR,message);
             return;
         }
 
@@ -369,24 +386,26 @@ var app = (function() {
                     return;
 
                 if(request.status === 200) {
+                    logger.notify(Logger.INFO,'Product found');
+
                     response = request.responseText;
-                    logger.notify('Product found');
                     pageView.gotoPage('productview',JSON.parse(response));
                 } else if(request.status === 404) {
-                    logger.notify('No data available');
+                    logger.notify(Logger.INFO,'No data available');
                     pageView.gotoPage('productnew',{
                         barcode: barcode
                     });
                 } else {
-                    logger.error('Internal error: Unexpected status code ' +
-                                 request.status);
+                    message = 'Internal error: Unexpected status code ' +
+                              request.status;
+                    logger.notify(Logger.ERROR,message);
                 }
             };
 
-            logger.notify('Requesting info...');
+            logger.notify(Logger.DELAY,'Requesting info...');
             request.send(null);
         } catch(ex) {
-            logger.error('Internal error: ' + ex.message);
+            logger.notify(Logger.ERROR,'Internal error: ' + ex.message);
         }
     };
 
@@ -398,7 +417,7 @@ var app = (function() {
         logger.log('name: ' + productName);
         logger.log('user: ' + user);
 
-        var request, response, productInfo;
+        var request, response, productInfo, message;
 
         try {
             request = new XMLHttpRequest();
@@ -411,10 +430,11 @@ var app = (function() {
                     return;
 
                 if(request.status === 200) {
-                    logger.notify('Product submitted');
+                    logger.notify(Logger.INFO,'Product submitted');
                 } else {
-                    logger.error('Internal error: Unexpected status code ' +
-                                 request.status);
+                    message = 'Internal error: Unexpected status code ' +
+                              request.status;
+                    logger.notify(Logger.ERROR,message);
                 }
             };
 
@@ -423,10 +443,10 @@ var app = (function() {
             };
             // TODO: Image
 
-            logger.notify('Submitting product...');
+            logger.notify(Logger.DELAY,'Submitting product...');
             request.send(toQueryString(productInfo));
         } catch(ex) {
-            logger.error('Internal error: ' + ex.message);
+            logger.notify(Logger.ERROR,'Internal error: ' + ex.message);
         }
     };
 
