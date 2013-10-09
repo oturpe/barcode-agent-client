@@ -2,22 +2,21 @@
 describe('Barcode Agent',function() {
     'use strict';
 
-    var baseLogger, notifier;
-
-    // Set up logger and notifier mocks.
-    beforeEach(function() {
-        baseLogger = {
-            log: function(message) {}
-        };
-
-        notifier = {
-            alert: function(message) {
-                this.message = message;
-            }
-        };
-    });
-
     describe('Logger',function() {
+        var baseLogger, notifier;
+
+        // Set up logger and notifier mocks.
+        beforeEach(function() {
+            baseLogger = {
+                log: function(message) {}
+            };
+
+            notifier = {
+                notify: function() {},
+                error: function() {}
+            };
+        });
+
         it('sends prefixed log messages to given base logger',function() {
             var logger = new app.Logger('PREFIX',baseLogger);
 
