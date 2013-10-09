@@ -207,7 +207,7 @@ var app = (function() {
                     logger.log('Unexpected notification type: ' + type);
                     break;
                 }
-                
+
                 statusTextElement.style.backgroundColor = color;
                 statusTextElement.innerHTML = message;
             }

@@ -126,10 +126,10 @@ describe('Barcode Agent',function() {
 
         it('hides added pages',function() {
             pageView.addPage(testPage);
-            
+
             expect(testPage.style.display).toEqual('none');
         });
-        
+
         it('interprets missing initializer as no-op',function() {
             pageView.addPage(testPage);
 
@@ -144,12 +144,11 @@ describe('Barcode Agent',function() {
                 expect(pageView.displayHandlers['testpage']).toBeTruthy();
             });
 
-        it('sets default (no-op) on-hide handler if none is given',
-            function() {
-                pageView.addPage(testPage);
+        it('sets default (no-op) on-hide handler if none is given',function() {
+            pageView.addPage(testPage);
 
-                expect(pageView.hideHandlers['testpage']).toBeTruthy();
-            });
+            expect(pageView.hideHandlers['testpage']).toBeTruthy();
+        });
 
         it('invokes initializers on page add',function() {
             var handlerCalled = false;
@@ -173,21 +172,22 @@ describe('Barcode Agent',function() {
             expect(handlerCalled).toBe(true);
         });
 
-        it('invokes onhide handler of the previously open page on page open',function() {
-            var onHide;
-            
-            onHide = jasmine.createSpy('onhide');
-            
-            pageView.addPage(testPage,null,null,onHide);
-            pageView.addPage(otherPage1,null,null);
-            pageView.addPage(otherPage2,null,null);
-            
-            pageView.gotoPage('testpage');
-            pageView.gotoPage('otherpage-1');
-            
-            expect(onHide).toHaveBeenCalled();
-        });
-        
+        it('invokes onhide handler of the previously open page on page open',
+            function() {
+                var onHide;
+
+                onHide = jasmine.createSpy('onhide');
+
+                pageView.addPage(testPage,null,null,onHide);
+                pageView.addPage(otherPage1,null,null);
+                pageView.addPage(otherPage2,null,null);
+
+                pageView.gotoPage('testpage');
+                pageView.gotoPage('otherpage-1');
+
+                expect(onHide).toHaveBeenCalled();
+            });
+
         it('displays only selected page on page open',function() {
             pageView.addPage(testPage,null,function() {});
             pageView.addPage(otherPage1,null,function() {});
@@ -228,7 +228,7 @@ describe('Barcode Agent',function() {
                 page.received = true;
             });
             pageView.addPage(otherPage1);
-            
+
             pageView.gotoPage('testpage');
             pageView.gotoPage('otherpage-1');
 
