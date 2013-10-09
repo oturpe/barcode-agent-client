@@ -95,12 +95,12 @@ var app = (function() {
 
             onDisplay = onDisplay || function() {};
             this.displayHandlers[page.id] = onDisplay;
-            
+
             onHide = onHide || function() {};
-            this.hideHandlers[page.id] = onHide; 
+            this.hideHandlers[page.id] = onHide;
 
             page.style.display = 'none';
-            
+
             if(init) {
                 init(page);
             }
@@ -190,8 +190,7 @@ var app = (function() {
                 // Green color
                 statusTextElement.style.backgroundColor = '#4B946A';
                 statusTextElement.innerHTML = message;
-            },
-            error: function(message) {
+            },error: function(message) {
                 // Red color
                 statusTextElement.style.backgroundColor = '#C90C22';
                 statusTextElement.innerHTML = message;
@@ -306,7 +305,7 @@ var app = (function() {
         settingsButton.addEventListener('click',function() {
             var newPageId;
 
-            if (pageView.currentPageId === 'settings') {
+            if(pageView.currentPageId === 'settings') {
                 newPageId = 'intro';
             } else {
                 newPageId = 'settings';
