@@ -28,10 +28,15 @@ var app = (function() {
         log: function(message) {
             this.baseLogger.log(this.prefix + ' ' + message);
         },
-        // Logs given message and displays it to the user
-        alert: function(message) {
-            this.log('[ALERT] ' + message);
-            this.notifier.alert(message);
+        // Logs given notification and displays it to the user
+        notify: function(message) {
+            this.log('[NOTIFICATION] ' + message);
+            this.notifier.notify(message);
+        },
+        // Logs given error and displays it to the user
+        error: function(message) {
+            this.log('[ERROR] ' + message);
+            this.notifier.error(message);
         }
     };
 
@@ -171,18 +176,25 @@ var app = (function() {
 
     // Application Constructor
     initialize = function() {
-        var page, notifier, statusbarElement, settingsButton;
+        var page, notifier, statusTextElement, settingsButton;
 
         defaultSettings = {
             'serverUrl': 'http://barcodeagent.nodejitsu.com'
         };
 
-        statusbarElement = document.getElementById('statusbar');
+        statusTextElement = document.getElementById('statustext');
         // Wraps Cordova notification plugin so that logger can be initialized
         // now without worrying if navigatotr.notification exists yet.
         notifier = {
-            alert: function(message) {
-                statusbarElement.innerHTML = message;
+            notify: function(message) {
+                // Green color
+                statusTextElement.style.backgroundColor = '#4B946A';
+                statusTextElement.innerHTML = message;
+            },
+            error: function(message) {
+                // Red color
+                statusTextElement.style.backgroundColor = '#C90C22';
+                statusTextElement.innerHTML = message;
             }
         };
 
@@ -287,15 +299,7 @@ var app = (function() {
         var scanButton, settingsButton, serverUrlInput, newProductControls = {};
 
         document.addEventListener('deviceready',function() {
-            var statusBarElement,statusTextElement;
-
-            statusBarElement = document.getElementById('statusbar');
-            statusBarElement.style.backgroundColor = '#4B946A';
-
-            statusTextElement = statusBarElement.querySelector('p');
-            statusTextElement.innerHTML="Device is Ready";
-
-            logger.log('Received deviceready event');
+            logger.notify('Device is Ready');
         },false);
 
         settingsButton = document.getElementById('settingsbutton');
@@ -337,10 +341,10 @@ var app = (function() {
 
                 requestInfo(result.text);
             },function(error) {
-                logger.alert('Scanning failed: ' + error);
+                logger.error('Scanning failed: ' + error);
             });
         } catch(ex) {
-            logger.alert('Internal error: ' + ex.message);
+            logger.error('Internal error: ' + ex.message);
         }
     };
 
@@ -351,7 +355,7 @@ var app = (function() {
         var request, response;
 
         if(!barcode) {
-            logger.alert('Interal error: Called "requestInfo" without barcode');
+            logger.error('Interal error: Called "requestInfo" without barcode');
             return;
         }
 
@@ -373,14 +377,14 @@ var app = (function() {
                         barcode: barcode
                     });
                 } else {
-                    logger.alert('Internal error: Unexpected status code ' +
+                    logger.error('Internal error: Unexpected status code ' +
                                  request.status);
                 }
             };
 
             request.send(null);
         } catch(ex) {
-            logger.alert('Internal error: ' + ex.message);
+            logger.error('Internal error: ' + ex.message);
         }
     };
 
@@ -405,9 +409,9 @@ var app = (function() {
                     return;
 
                 if(request.status === 200) {
-                    logger.alert('Product added');
+                    logger.notify('Product added');
                 } else {
-                    logger.alert('Internal error: Unexpected status code ' +
+                    logger.error('Internal error: Unexpected status code ' +
                                  request.status);
                 }
             };
@@ -419,7 +423,7 @@ var app = (function() {
 
             request.send(toQueryString(productInfo));
         } catch(ex) {
-            logger.alert('Internal error: ' + ex.message);
+            logger.error('Internal error: ' + ex.message);
         }
     };
 
