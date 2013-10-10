@@ -10,7 +10,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var Logger, Settings, PageView, logger, defaultSettings, settings, pageView, PRODUCTS_URL, newProductInfo, toProductURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo;
+    var Logger, Settings, PageView, logger, defaultSettings, settings, pageView, BARCODES_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo;
 
     // Logger constructor
     //
@@ -147,14 +147,14 @@ var app = (function() {
     };
 
     // Server URL components
-    PRODUCTS_URL = '/products';
+    BARCODES_URL = '/barcodes';
 
     // Variable storing details about new product
     newProductInfo = null;
 
     // Creates REST URL for given product ID
-    toProductURL = function(barcode) {
-        return settings.getItem('serverUrl') + PRODUCTS_URL + '/' + barcode;
+    toBarcodeURL = function(barcode) {
+        return settings.getItem('serverUrl') + BARCODES_URL + '/' + barcode;
     };
 
     // Creates URL-encoded string from given object, suitable for http
@@ -225,16 +225,19 @@ var app = (function() {
         // Handler for product view.
         page = document.querySelector('.page#productview');
         pageView.addPage(page,null,function(page,context) {
-            var commentsElement, comment, commentElement, comments, i, length;
+            var product, commentsElement, comment, commentElement, i, length;
 
-            page.querySelector('#productname').innerHTML = context.name;
+            // TODO: Handle all returned products somehow instead of using the
+            // first one.
+            product = context.products[0];
+
+            page.querySelector('#productname').innerHTML = product.name;
 
             commentsElement = page.querySelector('#productcomments');
 
-            comments = context.comments;
-            length = comments.length;
+            length = product.comments.length;
             for(i = 0; i < length; i += 1) {
-                comment = comments[i];
+                comment = product.comments[i];
                 commentElement = document.createElement('p');
                 commentElement.innerHTML = comment.text;
                 commentsElement.appendChild(commentElement);
@@ -367,7 +370,7 @@ var app = (function() {
     // found, takes app to view for that product. If no products are found,
     // instructs the user to add it to database.
     requestInfo = function(barcode) {
-        var request, response, message;
+        var request, response, url, message;
 
         if(!barcode) {
             message = 'Interal error: Called "requestInfo" without barcode';
@@ -375,11 +378,12 @@ var app = (function() {
             return;
         }
 
-        logger.log('Requesting info from ' + toProductURL(barcode));
+        url = toBarcodeURL(barcode);
+        logger.log('Requesting info from ' + url);
 
         try {
             request = new XMLHttpRequest();
-            request.open('GET',toProductURL(barcode),true);
+            request.open('GET',url,true);
 
             request.onreadystatechange = function() {
                 if(request.readyState !== 4)
@@ -429,7 +433,7 @@ var app = (function() {
                 if(request.readyState !== 4)
                     return;
 
-                if(request.status === 200) {
+                if(request.status === 201) {
                     logger.notify(Logger.INFO,'Product submitted');
                 } else {
                     message = 'Internal error: Unexpected status code ' +
