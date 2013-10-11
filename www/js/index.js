@@ -285,6 +285,9 @@ var app = (function() {
             // TODO: Image
         });
 
+        // FIXME: This kind of additional info page should probably be
+        // implemented some kind of modal dialog. As things stand now,
+        // opening the settings view loses the previous page.
         page = document.querySelector('.page#settings');
         settingsButton = document.querySelector('#settingsbutton');
         pageView.addPage(page,function(page) {
