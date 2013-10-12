@@ -1,4 +1,4 @@
-/*global window, document, XMLHttpRequest */
+/*global window, document, XMLHttpRequest, $p */
 
 var scanner, logger, settings, app;
 
@@ -10,7 +10,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var Logger, Settings, PageView, logger, defaultSettings, settings, pageView, BARCODES_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo;
+    var Logger, Settings, PageView, logger, defaultSettings, settings, pageView, BARCODES_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
 
     // Logger constructor
     //
@@ -158,7 +158,7 @@ var app = (function() {
 
             this.logger
                     .log('Going back to page with id ' + this.previousPageId);
-            
+
             pages = this.changeDisplay(this.currentPageId,this.previousPageId);
             this.currentPageId = pages.next.id;
             this.previousPageId = null;
@@ -184,6 +184,9 @@ var app = (function() {
             return pages;
         }
     };
+
+    // Collection of compiled PURE.js templates, one for each page
+    templates = {};
 
     // Server URL components
     BARCODES_URL = '/barcodes';
@@ -263,24 +266,25 @@ var app = (function() {
 
         // Handler for product view.
         page = document.querySelector('.page#productview');
+
+        templates.productView = $p('#productview').compile({
+            '#productname': 'name',
+            '.productcomment': {
+                'comment<-comments': {
+                    '.commentby': 'comment.by',
+                    '.commentdate': 'comment.date',
+                    '.commenttext': 'comment.text'
+                }
+            }
+        });
+
         pageView.addPage(page,null,function(page,context) {
-            var product, commentsElement, comment, commentElement, i, length;
+            var product;
 
             // TODO: Handle all returned products somehow instead of using the
             // first one.
             product = context.products[0];
-
-            page.querySelector('#productname').innerHTML = product.name;
-
-            commentsElement = page.querySelector('#productcomments');
-
-            length = product.comments.length;
-            for(i = 0; i < length; i += 1) {
-                comment = product.comments[i];
-                commentElement = document.createElement('p');
-                commentElement.innerHTML = comment.text;
-                commentsElement.appendChild(commentElement);
-            }
+            $p('#productview').render(product,templates.productView);
         });
 
         page = document.querySelector('.page#productnew');

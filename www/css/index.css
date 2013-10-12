@@ -104,3 +104,17 @@ h1 {
     animation:fade 3000ms infinite;
     -webkit-animation:fade 3000ms infinite;
 }
+
+#productcommentheader {
+    /* Makes this element grow to enclose also floating content. */
+    overflow: auto;
+}
+
+.commentdate {
+    float: right;
+    font-style: italic;
+}
+
+.commentby {
+    float: left;
+}
