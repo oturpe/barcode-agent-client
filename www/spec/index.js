@@ -151,28 +151,31 @@ describe('Barcode Agent',function() {
         });
 
         it('invokes initializers on page add',function() {
-            var handlerCalled = false;
+            var init;
 
-            pageView.addPage(testPage,function() {
-                handlerCalled = true;
-            });
+            init = jasmine.createSpy('init');
 
-            expect(handlerCalled).toBe(true);
+            pageView.addPage(testPage,init);
+
+            expect(init).toHaveBeenCalledWith(testPage);
         });
 
         it('invokes ondisplay handler on page open',function() {
-            var handlerCalled = false;
+            var onDisplay, context;
 
-            pageView.addPage(testPage,null,function() {
-                handlerCalled = true;
-            });
+            onDisplay = jasmine.createSpy('ondisplay');
+            context = {
+                a: 'a'
+            };
 
-            pageView.gotoPage('testpage');
+            pageView.addPage(testPage,null,onDisplay);
 
-            expect(handlerCalled).toBe(true);
+            pageView.gotoPage('testpage',context);
+
+            expect(onDisplay).toHaveBeenCalledWith(testPage,context);
         });
 
-        it('invokes onhide handler of the previously open page on page open',
+        it('invokes onhide handler of the previous page on page open',
             function() {
                 var onHide;
 
@@ -185,7 +188,7 @@ describe('Barcode Agent',function() {
                 pageView.gotoPage('testpage');
                 pageView.gotoPage('otherpage-1');
 
-                expect(onHide).toHaveBeenCalled();
+                expect(onHide).toHaveBeenCalledWith(testPage);
             });
 
         it('displays only selected page on page open',function() {
@@ -198,41 +201,6 @@ describe('Barcode Agent',function() {
             expect(testPage.style.display).toEqual('block');
             expect(otherPage1.style.display).toEqual('none');
             expect(otherPage2.style.display).toEqual('none');
-        });
-
-        it('passes page to initializer',function() {
-            pageView.addPage(testPage,function(page) {
-                page.received = true;
-            });
-
-            expect(testPage.received).toBe(true);
-        });
-
-        it('passes page and the context object to on-display handler',
-            function() {
-                var context = {};
-
-                pageView.addPage(testPage,null,function(page,context) {
-                    page.received = true;
-                    context.received = true;
-                });
-
-                pageView.gotoPage('testpage',context);
-
-                expect(testPage.received).toBe(true);
-                expect(context.received).toBe(true);
-            });
-
-        it('passes page to on-hide handler',function() {
-            pageView.addPage(testPage,null,null,function(page) {
-                page.received = true;
-            });
-            pageView.addPage(otherPage1);
-
-            pageView.gotoPage('testpage');
-            pageView.gotoPage('otherpage-1');
-
-            expect(testPage.received).toBe(true);
         });
 
         it('knows currently open page\'s id',function() {
