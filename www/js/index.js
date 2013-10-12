@@ -80,6 +80,9 @@ var app = (function() {
         this.displayHandlers = {};
         this.hideHandlers = {};
         this.pages = [];
+
+        this.currentPageId = undefined;
+        this.previousPageId = undefined;
     };
 
     PageView.prototype = {
@@ -91,7 +94,6 @@ var app = (function() {
         addPage: function(page,init,onDisplay,onHide) {
             this.pages.push(page);
             this.logger.log('Added page ' + page.id + ' to page list');
-            this.currentPageId = undefined;
 
             onDisplay = onDisplay || function() {};
             this.displayHandlers[page.id] = onDisplay;
@@ -108,10 +110,16 @@ var app = (function() {
 
         // Switches virtual page within the single page model. Context parameter
         // is a JS object containing page-specific initialization data.
+
+        // The specific actions performed by this method are:
+        // 1. Adjusting display values of page elements so that only the new
+        // page remains visible.
+        // 2. Calling on-display and on-hide handlers of the pages.
+        // 3. Updating current and previous page id member variables.
         //
         // Pages are referred to by their id's.
         gotoPage: function(newPageId,context) {
-            var currentPage, newPage, hideHandler, displayHandler, that;
+            var pages, hideHandler, displayHandler, that;
 
             displayHandler = this.displayHandlers[newPageId];
 
@@ -124,25 +132,56 @@ var app = (function() {
 
             this.logger.log('Opening page with id ' + newPageId);
 
-            that = this;
-            this.pages.forEach(function(page) {
-                if(page.id === newPageId) {
-                    newPage = page;
-                    page.style.display = 'block';
-                } else if(page.id === that.currentPageId) {
-                    currentPage = page;
-                    page.style.display = 'none';
-                }
-            });
+            pages = this.changeDisplay(this.currentPageId,newPageId);
 
             // No current page id when the first page is opened
             if(this.currentPageId) {
                 hideHandler = this.hideHandlers[this.currentPageId];
-                hideHandler(currentPage);
+                hideHandler(pages.current);
             }
 
+            this.previousPageId = this.currentPageId;
             this.currentPageId = newPageId;
-            displayHandler(newPage,context);
+            displayHandler(pages.next,context);
+        },
+
+        // Displays the page that was visible before current page. This method
+        // functions like gotoPage. Note that it is not possible to go to
+        // previous page again from the opened page. Essentially, the history is
+        // one page long and this method does not update it.
+        //
+        // Note that on-hide handler of hidden page is called, but on-display
+        // of opened (previous) page is not called as it is expected that the
+        // page is still in the state where it was when it was closed.
+        previousPage: function() {
+            var pages;
+
+            this.logger
+                    .log('Going back to page with id ' + this.previousPageId);
+            
+            pages = this.changeDisplay(this.currentPageId,this.previousPageId);
+            this.currentPageId = pages.next.id;
+            this.previousPageId = null;
+
+            this.hideHandlers[pages.current.id](pages.current);
+        },
+
+        // Utility for changing display values of both current and new page.
+        // Returns both these pages as html elements.
+        changeDisplay: function(currentId,newId) {
+            var pages = {};
+
+            this.pages.forEach(function(page) {
+                if(page.id === newId) {
+                    pages.next = page;
+                    page.style.display = 'block';
+                } else if(page.id === currentId) {
+                    pages.current = page;
+                    page.style.display = 'none';
+                }
+            });
+
+            return pages;
         }
     };
 
@@ -286,8 +325,7 @@ var app = (function() {
         });
 
         // FIXME: This kind of additional info page should probably be
-        // implemented some kind of modal dialog. As things stand now,
-        // opening the settings view loses the previous page.
+        // implemented some kind of modal dialog.
         page = document.querySelector('.page#settings');
         settingsButton = document.querySelector('#settingsbutton');
         pageView.addPage(page,function(page) {
@@ -325,15 +363,11 @@ var app = (function() {
 
         settingsButton = document.getElementById('settingsbutton');
         settingsButton.addEventListener('click',function() {
-            var newPageId;
-
             if(pageView.currentPageId === 'settings') {
-                newPageId = 'intro';
+                pageView.previousPage();
             } else {
-                newPageId = 'settings';
+                pageView.gotoPage('settings');
             }
-
-            pageView.gotoPage(newPageId);
         },false);
 
         scanButton = document.getElementById('scanbutton');

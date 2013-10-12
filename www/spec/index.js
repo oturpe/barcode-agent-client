@@ -203,12 +203,68 @@ describe('Barcode Agent',function() {
             expect(otherPage2.style.display).toEqual('none');
         });
 
-        it('knows currently open page\'s id',function() {
+        it('going to page updates current page id',function() {
             pageView.addPage(testPage);
 
             pageView.gotoPage('testpage');
 
             expect(pageView.currentPageId).toEqual('testpage');
         });
+
+        it('can go back to previous page',function() {
+            pageView.addPage(testPage);
+            pageView.addPage(otherPage1);
+
+            pageView.gotoPage('testpage');
+            pageView.gotoPage('otherpage-1');
+            pageView.previousPage();
+
+            expect(testPage.style.display).toEqual('block');
+            expect(otherPage1.style.display).toEqual('none');
+        });
+
+        it('going to previous page updates current page id',function() {
+            pageView.addPage(testPage);
+            pageView.addPage(otherPage1);
+
+            pageView.gotoPage('testpage');
+            pageView.gotoPage('otherpage-1');
+            pageView.previousPage();
+
+            expect(pageView.currentPageId).toEqual('testpage');
+        });
+
+        it('going to previous page does not fire ondisplay events',function() {
+            var onDisplay;
+
+            onDisplay = jasmine.createSpy('ondisplay');
+
+            pageView.addPage(testPage,null,onDisplay);
+            pageView.addPage(otherPage1);
+
+            pageView.gotoPage('testpage');
+            pageView.gotoPage('otherpage-1');
+            pageView.previousPage();
+
+            expect(onDisplay.calls.length).toEqual(1);
+        });
+
+        it('going to previous page fires onhide events',function() {
+            var onHide;
+
+            onHide = jasmine.createSpy('onhide');
+
+            pageView.addPage(testPage,null,null,onHide);
+            pageView.addPage(otherPage1);
+
+            pageView.gotoPage('otherpage-1');
+            pageView.gotoPage('testpage');
+            pageView.previousPage();
+
+            expect(onHide.calls.length).toEqual(1);
+        });
+
+        // TODO: What should happen if we go to previous page twice, or if there
+        // is no previous page?
     });
 });
