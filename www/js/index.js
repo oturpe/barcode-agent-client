@@ -10,7 +10,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var Logger, Settings, PageView, logger, defaultSettings, settings, pageView, BARCODES_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
+    var Logger, Settings, PageView, logger, defaultSettings, settings, pageView, BARCODES_URL, PRODUCTS_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
 
     // Logger constructor
     //
@@ -190,6 +190,7 @@ var app = (function() {
 
     // Server URL components
     BARCODES_URL = '/barcodes';
+    PRODUCTS_URL = '/products';
 
     // Variable storing details about new product
     newProductInfo = null;
