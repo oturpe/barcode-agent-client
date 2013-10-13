@@ -105,6 +105,9 @@ h1 {
     -webkit-animation:fade 3000ms infinite;
 }
 
+.page {
+    display: none;
+}
 #productcommentheader {
     /* Makes this element grow to enclose also floating content. */
     overflow: auto;

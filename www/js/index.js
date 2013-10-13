@@ -100,8 +100,6 @@ var app = (function() {
 
             onHide = onHide || function() {};
             this.hideHandlers[page.id] = onHide;
-
-            page.style.display = 'none';
         },
 
         // Switches virtual page within the single page model. Context parameter

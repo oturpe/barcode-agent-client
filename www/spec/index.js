@@ -124,12 +124,6 @@ describe('Barcode Agent',function() {
             };
         });
 
-        it('hides added pages',function() {
-            pageView.addPage(testPage);
-
-            expect(testPage.style.display).toEqual('none');
-        });
-
         it('sets default (no-op) on-display handler if none is given',
             function() {
                 pageView.addPage(testPage);
