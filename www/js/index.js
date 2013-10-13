@@ -288,6 +288,12 @@ var app = (function() {
         });
 
         page = document.querySelector('.page#productnew');
+
+        templates.productNew = $p('#productnew').compile({
+            '#productnewbarcode@value': 'barcode',
+            '#productnewname@value': 'name'
+        });
+
         pageView.addPage(page,function(page) {
             var nameElement, submitElement;
 
@@ -311,19 +317,12 @@ var app = (function() {
         // - barcode: product's barcode (read-only)
         // - name: suggestion for product name, user-editable, usually empty
         function(page,context) {
-            var barcodeElement, nameElement;
-
             // Note: newProductInfo is defined at top level and shared
             newProductInfo = {
                 barcode: context.barcode,name: context.name
             };
 
-            barcodeElement = page.querySelector('#productnewbarcode');
-            barcodeElement.value = newProductInfo.barcode;
-            barcodeElement.readOnly = true;
-
-            nameElement = page.querySelector('#productnewname');
-            nameElement.value = newProductInfo.name || '';
+            $p('#productnew').render(newProductInfo,templates.productNew);
 
             // TODO: Image
         });
@@ -331,6 +330,11 @@ var app = (function() {
         // FIXME: This kind of additional info page should probably be
         // implemented some kind of modal dialog.
         page = document.querySelector('.page#settings');
+        
+        templates.settings = $p('#settings').compile({
+            '#serverurl@value': 'url'
+        });
+        
         settingsButton = document.querySelector('#settingsbutton');
         pageView.addPage(page,function(page) {
             var serverUrlInput = document.getElementById('serverurl');
@@ -341,11 +345,8 @@ var app = (function() {
         },
         // On display handler fills controls with current settings and changes
         // settings button text.
-        function(page) {
-            var urlInput;
-
-            urlInput = page.querySelector('#serverurl');
-            urlInput.value = settings.getItem('serverUrl');
+        function(page,context) {
+            $p('#settings').render(context,templates.settings);
 
             settingsButton.innerHTML = 'hide settings';
         },
@@ -359,7 +360,7 @@ var app = (function() {
 
     // Bind Event Listeners
     bindEvents = function() {
-        var scanButton, settingsButton, serverUrlInput, newProductControls = {};
+        var scanButton, settingsButton, context;
 
         document.addEventListener('deviceready',function() {
             logger.notify(Logger.INFO,'Device is Ready');
@@ -370,7 +371,8 @@ var app = (function() {
             if(pageView.currentPageId === 'settings') {
                 pageView.previousPage();
             } else {
-                pageView.gotoPage('settings');
+                context = {url: settings.getItem('serverUrl')};
+                pageView.gotoPage('settings',context);
             }
         },false);
 
