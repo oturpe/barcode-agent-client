@@ -75,11 +75,11 @@ var app = (function() {
     //
     // Initialization of page with given id is handled by specialized
     // handler function, registered with addPage method.
-    PageView = function(logger) {
+    PageView = function(logger,document) {
         this.logger = logger;
+        this.document = document;
         this.displayHandlers = {};
         this.hideHandlers = {};
-        this.pages = [];
 
         this.currentPageId = undefined;
         this.previousPageId = undefined;
@@ -91,15 +91,14 @@ var app = (function() {
         //
         // Assumes responsibility for viewing and hiding the page, hiding it
         // initially. To show the page, see method gotoPage.
-        addPage: function(page,onDisplay,onHide) {
-            this.pages.push(page);
-            this.logger.log('Added page ' + page.id + ' to page list');
+        addPage: function(id,onDisplay,onHide) {
+            this.logger.log('Added page ' + id + ' to page list');
 
             onDisplay = onDisplay || function() {};
-            this.displayHandlers[page.id] = onDisplay;
+            this.displayHandlers[id] = onDisplay;
 
             onHide = onHide || function() {};
-            this.hideHandlers[page.id] = onHide;
+            this.hideHandlers[id] = onHide;
         },
 
         // Switches virtual page within the single page model. Context parameter
@@ -113,7 +112,7 @@ var app = (function() {
         //
         // Pages are referred to by their id's.
         gotoPage: function(newPageId,context) {
-            var pages, hideHandler, displayHandler, that;
+            var hideHandler, displayHandler;
 
             displayHandler = this.displayHandlers[newPageId];
 
@@ -126,17 +125,18 @@ var app = (function() {
 
             this.logger.log('Opening page with id ' + newPageId);
 
-            pages = this.changeDisplay(this.currentPageId,newPageId);
-
             // No current page id when the first page is opened
             if(this.currentPageId) {
                 hideHandler = this.hideHandlers[this.currentPageId];
-                hideHandler(pages.current);
+                hideHandler(this.currentPageId);
             }
+
+            displayHandler(newPageId,context);
+
+            this.changeDisplay(this.currentPageId,newPageId);
 
             this.previousPageId = this.currentPageId;
             this.currentPageId = newPageId;
-            displayHandler(pages.next,context);
         },
 
         // Displays the page that was visible before current page. This method
@@ -153,29 +153,24 @@ var app = (function() {
             this.logger
                     .log('Going back to page with id ' + this.previousPageId);
 
-            pages = this.changeDisplay(this.currentPageId,this.previousPageId);
-            this.currentPageId = pages.next.id;
-            this.previousPageId = null;
+            this.hideHandlers[this.currentPageId](this.currentPageId);
 
-            this.hideHandlers[pages.current.id](pages.current);
+            this.changeDisplay(this.currentPageId,this.previousPageId);
+
+            this.currentPageId = this.previousPageId;
+            this.previousPageId = null;
         },
 
         // Utility for changing display values of both current and new page.
-        // Returns both these pages as html elements.
         changeDisplay: function(currentId,newId) {
-            var pages = {};
+            var currentPage, newPage;
 
-            this.pages.forEach(function(page) {
-                if(page.id === newId) {
-                    pages.next = page;
-                    page.style.display = 'block';
-                } else if(page.id === currentId) {
-                    pages.current = page;
-                    page.style.display = 'none';
-                }
-            });
+            currentPage = this.document.querySelector('#' + currentId);
+            if(currentPage) {
+                currentPage.style.display = 'none';
+            }
 
-            return pages;
+            this.document.querySelector('#' + newId).style.display = 'block';
         }
     };
 
@@ -252,21 +247,17 @@ var app = (function() {
 
         logger = new Logger('BarcodeAgent',window.console,notifier);
         settings = new Settings(logger,window.localStorage,defaultSettings);
-        pageView = new PageView(logger);
+        pageView = new PageView(logger,document);
 
         bindEvents();
 
         // *** Sequence of IIFE's, each registering a single page. ***
 
         (function() {
-            var page = document.querySelector('.page#intro');
-            pageView.addPage(page);
+            pageView.addPage('intro');
         })();
 
         (function() {
-            // Handler for product view.
-            var page = document.querySelector('.page#productview');
-
             templates.productView = $p('#productview').compile({
                 '#productname': 'name',
                 '.productcomment': {
@@ -278,37 +269,34 @@ var app = (function() {
                 }
             });
 
-            pageView.addPage(page,function(page,context) {
+            pageView.addPage('productview',function(pageId,context) {
                 var product;
 
                 // TODO: Handle all returned products somehow instead of using
                 // the
                 // first one.
                 product = context.products[0];
-                $p('#productview').render(product,templates.productView);
+                $p('#' + pageId).render(product,templates.productView);
             });
         })();
 
         (function() {
-            var page = document.querySelector('.page#productnew');
-
             templates.productNew = $p('#productnew').compile({
                 '#productnewbarcode@value': 'barcode',
                 '#productnewname@value': 'name'
             });
 
-            pageView.addPage(page,
+            pageView.addPage('productnew',
             // Context:
             // - barcode: product's barcode (read-only)
             // - name: suggestion for product name, user-editable, usually empty
-            function(page,context) {
-                var nameElement, submitElement;
+            function(pageId,context) {
+                var page, nameElement, submitElement;
 
-                $p('#productnew').render(context,templates.productNew);
+                $p('#' + pageId).render(context,templates.productNew);
+                page = document.querySelector('#' + pageId);
 
                 // TODO: Image
-
-                page = document.querySelector('#productnew');
 
                 nameElement = page.querySelector('#productnewname');
                 submitElement = page.querySelector('#productnewsubmit');
@@ -331,23 +319,21 @@ var app = (function() {
         (function() {
             // FIXME: This kind of additional info page should probably be
             // implemented some kind of modal dialog.
-            var page, settingsButton;
-
-            page = document.querySelector('.page#settings');
+            var settingsButton;
 
             templates.settings = $p('#settings').compile({
                 '#serverurl@value': 'url'
             });
 
             settingsButton = document.querySelector('#settingsbutton');
-            pageView.addPage(page,
+            pageView.addPage('settings',
             // On display handler fills controls with current settings and
             // changes
             // settings button text.
-            function(page,context) {
+            function(pageId,context) {
                 var serverUrlInput;
 
-                $p('#settings').render(context,templates.settings);
+                $p('#' + pageId).render(context,templates.settings);
 
                 serverUrlInput = document.getElementById('serverurl');
                 serverUrlInput.addEventListener('change',function() {
@@ -380,7 +366,7 @@ var app = (function() {
                 pageView.previousPage();
             } else {
                 context = {
-                    url: settings.getItem('serverUrl')
+                    'url': settings.getItem('serverUrl')
                 };
                 pageView.gotoPage('settings',context);
             }
