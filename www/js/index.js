@@ -219,7 +219,7 @@ var app = (function() {
 
     // Application Constructor
     initialize = function() {
-        var page, notifier, statusTextElement, settingsButton;
+        var notifier, statusTextElement, settingsButton;
 
         defaultSettings = {
             'serverUrl': 'http://barcodeagent.nodejitsu.com'
@@ -262,94 +262,112 @@ var app = (function() {
 
         bindEvents();
 
-        page = document.querySelector('.page#intro');
-        pageView.addPage(page);
+        // *** Sequence of IIFE's, each registering a single page. ***
 
-        // Handler for product view.
-        page = document.querySelector('.page#productview');
+        (function() {
+            var page = document.querySelector('.page#intro');
+            pageView.addPage(page);
+        })();
 
-        templates.productView = $p('#productview').compile({
-            '#productname': 'name',
-            '.productcomment': {
-                'comment<-comments': {
-                    '.commentby': 'comment.by',
-                    '.commentdate': 'comment.date',
-                    '.commenttext': 'comment.text'
+        (function() {
+            // Handler for product view.
+            var page = document.querySelector('.page#productview');
+
+            templates.productView = $p('#productview').compile({
+                '#productname': 'name',
+                '.productcomment': {
+                    'comment<-comments': {
+                        '.commentby': 'comment.by',
+                        '.commentdate': 'comment.date',
+                        '.commenttext': 'comment.text'
+                    }
                 }
-            }
-        });
+            });
 
-        pageView.addPage(page,null,function(page,context) {
-            var product;
+            pageView.addPage(page,null,function(page,context) {
+                var product;
 
-            // TODO: Handle all returned products somehow instead of using the
-            // first one.
-            product = context.products[0];
-            $p('#productview').render(product,templates.productView);
-        });
+                // TODO: Handle all returned products somehow instead of using
+                // the
+                // first one.
+                product = context.products[0];
+                $p('#productview').render(product,templates.productView);
+            });
+        })();
 
-        page = document.querySelector('.page#productnew');
+        (function() {
+            var page = document.querySelector('.page#productnew');
 
-        templates.productNew = $p('#productnew').compile({
-            '#productnewbarcode@value': 'barcode',
-            '#productnewname@value': 'name'
-        });
+            templates.productNew = $p('#productnew').compile({
+                '#productnewbarcode@value': 'barcode',
+                '#productnewname@value': 'name'
+            });
 
-        pageView.addPage(page,function(page) {
-            var nameElement, submitElement;
+            pageView.addPage(page,null,
+            // Context:
+            // - barcode: product's barcode (read-only)
+            // - name: suggestion for product name, user-editable, usually empty
+            function(page,context) {
+                var nameElement, submitElement;
 
-            nameElement = page.querySelector('#productnewname');
-            submitElement = page.querySelector('#productnewsubmit');
+                $p('#productnew').render(context,templates.productNew);
 
-            nameElement.addEventListener('change',function() {
-                newProductInfo.name = this.value;
-            },false);
+                // TODO: Image
 
-            // Note: Barcode does not need change event listener as it is
-            // not to be edited by user.
+                page = document.querySelector('#productnew');
 
-            submitElement.addEventListener('click',function() {
-                submit(newProductInfo.barcode,
-                    newProductInfo.name,
-                    newProductInfo.user);
-            },false);
-        },
-        // Context:
-        // - barcode: product's barcode (read-only)
-        // - name: suggestion for product name, user-editable, usually empty
-        function(page,context) {
-            $p('#productnew').render(context,templates.productNew);
+                nameElement = page.querySelector('#productnewname');
+                submitElement = page.querySelector('#productnewsubmit');
 
-            // TODO: Image
-        });
+                nameElement.addEventListener('change',function() {
+                    newProductInfo.name = this.value;
+                },false);
 
-        // FIXME: This kind of additional info page should probably be
-        // implemented some kind of modal dialog.
-        page = document.querySelector('.page#settings');
+                // Note: Barcode does not need change event listener as it is
+                // not to be edited by user.
 
-        templates.settings = $p('#settings').compile({
-            '#serverurl@value': 'url'
-        });
+                submitElement.addEventListener('click',function() {
+                    submit(newProductInfo.barcode,
+                        newProductInfo.name,
+                        newProductInfo.user);
+                },false);
+            });
+        })();
 
-        settingsButton = document.querySelector('#settingsbutton');
-        pageView.addPage(page,function(page) {
-            var serverUrlInput = document.getElementById('serverurl');
-            serverUrlInput.addEventListener('change',function() {
-                logger.log('Setting server URL to "' + this.value + '"');
-                settings.setItem('serverUrl',this.value);
-            },false);
-        },
-        // On display handler fills controls with current settings and changes
-        // settings button text.
-        function(page,context) {
-            $p('#settings').render(context,templates.settings);
+        (function() {
+            // FIXME: This kind of additional info page should probably be
+            // implemented some kind of modal dialog.
+            var page, settingsButton;
 
-            settingsButton.innerHTML = 'hide settings';
-        },
-        // On hide handler changes settings button text
-        function() {
-            settingsButton.innerHTML = 'view settings';
-        });
+            page = document.querySelector('.page#settings');
+
+            templates.settings = $p('#settings').compile({
+                '#serverurl@value': 'url'
+            });
+
+            settingsButton = document.querySelector('#settingsbutton');
+            pageView.addPage(page,null,
+            // On display handler fills controls with current settings and
+            // changes
+            // settings button text.
+            function(page,context) {
+                var serverUrlInput;
+
+                $p('#settings').render(context,templates.settings);
+
+                serverUrlInput = document.getElementById('serverurl');
+                serverUrlInput.addEventListener('change',function() {
+                    logger.log('Setting server URL to "' + this.value + '"');
+                    settings.setItem('serverUrl',this.value);
+                },false);
+
+                settingsButton.innerHTML = 'hide settings';
+            },
+            // On hide handler changes settings button text
+            function() {
+                settingsButton.innerHTML = 'view settings';
+            });
+        })();
 
         pageView.gotoPage('intro');
     };
