@@ -317,12 +317,7 @@ var app = (function() {
         // - barcode: product's barcode (read-only)
         // - name: suggestion for product name, user-editable, usually empty
         function(page,context) {
-            // Note: newProductInfo is defined at top level and shared
-            newProductInfo = {
-                barcode: context.barcode,name: context.name
-            };
-
-            $p('#productnew').render(newProductInfo,templates.productNew);
+            $p('#productnew').render(context,templates.productNew);
 
             // TODO: Image
         });
@@ -330,11 +325,11 @@ var app = (function() {
         // FIXME: This kind of additional info page should probably be
         // implemented some kind of modal dialog.
         page = document.querySelector('.page#settings');
-        
+
         templates.settings = $p('#settings').compile({
             '#serverurl@value': 'url'
         });
-        
+
         settingsButton = document.querySelector('#settingsbutton');
         pageView.addPage(page,function(page) {
             var serverUrlInput = document.getElementById('serverurl');
@@ -371,7 +366,9 @@ var app = (function() {
             if(pageView.currentPageId === 'settings') {
                 pageView.previousPage();
             } else {
-                context = {url: settings.getItem('serverUrl')};
+                context = {
+                    url: settings.getItem('serverUrl')
+                };
                 pageView.gotoPage('settings',context);
             }
         },false);
@@ -435,13 +432,16 @@ var app = (function() {
                 if(request.status === 200) {
                     logger.notify(Logger.INFO,'Product found');
 
-                    response = request.responseText;
-                    pageView.gotoPage('productview',JSON.parse(response));
+                    response = JSON.parse(request.responseText);
+                    pageView.gotoPage('productview',response);
                 } else if(request.status === 404) {
                     logger.notify(Logger.INFO,'No data available');
-                    pageView.gotoPage('productnew',{
+
+                    newProductInfo = {
                         barcode: barcode
-                    });
+                    };
+
+                    pageView.gotoPage('productnew',newProductInfo);
                 } else {
                     message = 'Internal error: Unexpected status code ' +
                               request.status;
