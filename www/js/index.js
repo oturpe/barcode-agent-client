@@ -87,11 +87,11 @@ var app = (function() {
 
     PageView.prototype = {
         // Adds page to the list of registered pages and associates given
-        // initializer and on-display and on-hide handlers with it.
+        // on-display and on-hide handlers with it.
         //
         // Assumes responsibility for viewing and hiding the page, hiding it
         // initially. To show the page, see method gotoPage.
-        addPage: function(page,init,onDisplay,onHide) {
+        addPage: function(page,onDisplay,onHide) {
             this.pages.push(page);
             this.logger.log('Added page ' + page.id + ' to page list');
 
@@ -102,10 +102,6 @@ var app = (function() {
             this.hideHandlers[page.id] = onHide;
 
             page.style.display = 'none';
-
-            if(init) {
-                init(page);
-            }
         },
 
         // Switches virtual page within the single page model. Context parameter
@@ -284,7 +280,7 @@ var app = (function() {
                 }
             });
 
-            pageView.addPage(page,null,function(page,context) {
+            pageView.addPage(page,function(page,context) {
                 var product;
 
                 // TODO: Handle all returned products somehow instead of using
@@ -303,7 +299,7 @@ var app = (function() {
                 '#productnewname@value': 'name'
             });
 
-            pageView.addPage(page,null,
+            pageView.addPage(page,
             // Context:
             // - barcode: product's barcode (read-only)
             // - name: suggestion for product name, user-editable, usually empty
@@ -346,7 +342,7 @@ var app = (function() {
             });
 
             settingsButton = document.querySelector('#settingsbutton');
-            pageView.addPage(page,null,
+            pageView.addPage(page,
             // On display handler fills controls with current settings and
             // changes
             // settings button text.
