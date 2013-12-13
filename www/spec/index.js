@@ -127,10 +127,30 @@ describe('Barcode Agent',
                 });
         });
 
+        describe('createPage',function() {
+            var document, domPage;
+
+            domPage = {
+                id: 'pageId'
+            };
+
+            document = {
+                querySelector: function(string) {
+                    switch(string) {
+                    case '#pageId':
+                        return domPage;
+                    default:
+                        return undefined;
+                    }
+                }
+            };
+
+        });
+
         describe('PageView',
             function() {
 
-                var nullLogger, mockDocument, pageView, testPageMarkup, otherPage1Markup, otherPage2Markup;
+                var nullLogger, mockDocument, pageView, testPageDom, otherPageDom1, otherPageDom2;
 
                 nullLogger = {
                     log: function() {}
@@ -141,26 +161,32 @@ describe('Barcode Agent',
                     querySelector: function(pageSelector) {
                         switch(pageSelector) {
                         case '#testpage':
-                            return testPageMarkup;
+                            return testPageDom;
                         case '#otherpage-1':
-                            return otherPage1Markup;
+                            return otherPageDom1;
                         case '#otherpage-2':
-                            return otherPage2Markup;
+                            return otherPageDom2;
                         }
                     }
                 };
 
                 beforeEach(function() {
                     pageView = new app.PageView(nullLogger,mockDocument);
-                    testPageMarkup = {
+                    testPageDom = {
                         id: 'testpage',style: {}
                     };
-                    otherPage1Markup = {
+                    otherPageDom1 = {
                         id: 'otherpage-1',style: {}
                     };
-                    otherPage2Markup = {
+                    otherPageDom2 = {
                         id: 'otherpage-2',style: {}
                     };
+                });
+
+                it('adds plain pages',function() {
+                    pageView.addPage(new app.Page(testPageDom.id));
+
+                    expect(pageView.pages[testPageDom.id]).toBeTruthy();
                 });
 
                 it('invokes ondisplay handler on page open',function() {
@@ -171,12 +197,14 @@ describe('Barcode Agent',
                     };
 
                     onDisplay = jasmine.createSpy('ondisplay');
-                    testPage = new app.Page(testPageMarkup.id,onDisplay);
+                    testPage = new app.Page(testPageDom.id,
+                                            testPageDom,
+                                            onDisplay);
                     pageView.addPage(testPage);
 
-                    pageView.gotoPage(testPageMarkup.id,context);
+                    pageView.gotoPage(testPageDom.id,context);
 
-                    expect(onDisplay).toHaveBeenCalledWith(testPageMarkup.id,
+                    expect(onDisplay).toHaveBeenCalledWith(testPageDom.id,
                         context);
                 });
 
@@ -186,67 +214,72 @@ describe('Barcode Agent',
 
                         onHide = jasmine.createSpy('onhide');
 
-                        pageView.addPage(new app.Page(testPageMarkup.id,
+                        pageView.addPage(new app.Page(testPageDom.id,
+                                                      testPageDom,
                                                       null,
                                                       onHide));
-                        pageView.addPage(new app.Page(otherPage1Markup.id));
-                        pageView.addPage(otherPage2Markup.id);
+                        pageView.addPage(new app.Page(otherPageDom1.id,
+                                                      otherPageDom1));
+                        pageView.addPage(new app.Page(otherPageDom2.id,
+                                                      otherPageDom2));
 
-                        pageView.gotoPage(testPageMarkup.id);
-                        pageView.gotoPage(otherPage1Markup.id);
+                        pageView.gotoPage(testPageDom.id);
+                        pageView.gotoPage(otherPageDom1.id);
 
-                        expect(onHide).toHaveBeenCalledWith(testPageMarkup.id);
+                        expect(onHide).toHaveBeenCalledWith(testPageDom.id);
                     });
 
-                it('displays only selected page on page open',
-                    function() {
-                        pageView.addPage(new app.Page(testPageMarkup.id));
-                        pageView.addPage(new app.Page(otherPage1Markup.id));
-                        pageView.addPage(new app.Page(otherPage2Markup.id));
+                it('displays only selected page on page open',function() {
+                    pageView.addPage(new app.Page(testPageDom.id,testPageDom));
+                    pageView.addPage(new app.Page(otherPageDom1.id,
+                                                  otherPageDom1));
+                    pageView.addPage(new app.Page(otherPageDom2.id,
+                                                  otherPageDom2));
 
-                        pageView.gotoPage(otherPage1Markup.id);
-                        pageView.gotoPage(testPageMarkup.id);
+                    pageView.gotoPage(otherPageDom1.id);
+                    pageView.gotoPage(testPageDom.id);
 
-                        expect(testPageMarkup.style.display).toEqual('block');
-                        expect(otherPage1Markup.style.display).not
-                                .toEqual('block');
-                        expect(otherPage2Markup.style.display).not
-                                .toEqual('block');
-                    });
+                    expect(testPageDom.style.display).toEqual('block');
+                    expect(otherPageDom1.style.display).not.toEqual('block');
+                    expect(otherPageDom2.style.display).not.toEqual('block');
+                });
 
                 it('going to page updates current page',function() {
                     var testPage;
 
-                    testPage = new app.Page(testPageMarkup.id);
+                    testPage = new app.Page(testPageDom.id,testPageDom);
                     pageView.addPage(testPage);
 
-                    pageView.gotoPage(testPageMarkup.id);
+                    pageView.addPage(testPage);
+                    pageView.gotoPage(testPageDom.id);
 
                     expect(pageView.currentPage).toEqual(testPage);
                 });
 
                 it('can go back to previous page',function() {
-                    pageView.addPage(new app.Page(testPageMarkup.id));
-                    pageView.addPage(new app.Page(otherPage1Markup.id));
+                    pageView.addPage(new app.Page(testPageDom.id,testPageDom));
+                    pageView.addPage(new app.Page(otherPageDom1.id,
+                                                  otherPageDom1));
 
-                    pageView.gotoPage(testPageMarkup.id);
-                    pageView.gotoPage(otherPage1Markup.id);
+                    pageView.gotoPage(testPageDom.id);
+                    pageView.gotoPage(otherPageDom1.id);
                     pageView.gotoPreviousPage();
 
-                    expect(testPageMarkup.style.display).toEqual('block');
-                    expect(otherPage1Markup.style.display).toEqual('none');
+                    expect(testPageDom.style.display).toEqual('block');
+                    expect(otherPageDom1.style.display).toEqual('none');
                 });
 
                 it('going to previous page updates current page',function() {
                     var testPage;
 
-                    testPage = new app.Page(testPageMarkup.id)
+                    testPage = new app.Page(testPageDom.id,testPageDom);
 
                     pageView.addPage(testPage);
-                    pageView.addPage(new app.Page(otherPage1Markup.id));
+                    pageView.addPage(new app.Page(otherPageDom1.id,
+                                                  otherPageDom1));
 
-                    pageView.gotoPage(testPageMarkup.id);
-                    pageView.gotoPage(otherPage1Markup.id);
+                    pageView.gotoPage(testPageDom.id);
+                    pageView.gotoPage(otherPageDom1.id);
                     pageView.gotoPreviousPage();
 
                     expect(pageView.currentPage).toEqual(testPage);
@@ -258,37 +291,82 @@ describe('Barcode Agent',
 
                         onDisplay = jasmine.createSpy('ondisplay');
 
-                        pageView.addPage(new app.Page(testPageMarkup.id,
+                        pageView.addPage(new app.Page(testPageDom.id,
+                                                      testPageDom,
                                                       onDisplay));
-                        pageView.addPage(new app.Page(otherPage1Markup.id));
+                        pageView.addPage(new app.Page(otherPageDom1.id,
+                                                      otherPageDom1));
 
-                        pageView.gotoPage(testPageMarkup.id);
-                        pageView.gotoPage(otherPage1Markup.id);
+                        pageView.gotoPage(testPageDom.id);
+                        pageView.gotoPage(otherPageDom1.id);
                         pageView.gotoPreviousPage();
 
                         expect(onDisplay.calls.length).toEqual(1);
                     });
 
-                it('going to previous page fires onhide events',
-                    function() {
-                        var onHide;
+                it('going to previous page fires onhide events',function() {
+                    var onHide;
 
-                        onHide = jasmine.createSpy('onhide');
+                    onHide = jasmine.createSpy('onhide');
 
-                        pageView.addPage(new app.Page(testPageMarkup.id,
-                                                      null,
-                                                      onHide));
-                        pageView.addPage(new app.Page(otherPage1Markup.id));
+                    pageView.addPage(new app.Page(testPageDom.id,
+                                                  testPageDom,
+                                                  null,
+                                                  onHide));
+                    pageView.addPage(new app.Page(otherPageDom1.id,
+                                                  otherPageDom1));
 
-                        pageView.gotoPage(otherPage1Markup.id);
-                        pageView.gotoPage(testPageMarkup.id);
-                        pageView.gotoPreviousPage();
+                    pageView.gotoPage(otherPageDom1.id);
+                    pageView.gotoPage(testPageDom.id);
+                    pageView.gotoPreviousPage();
 
-                        expect(onHide.calls.length).toEqual(1);
-                    });
+                    expect(onHide.calls.length).toEqual(1);
+                });
 
                 // TODO: What should happen if we go to previous page twice, or
                 // if there
                 // is no previous page?
             });
+
+        describe('DocumentPageExtractor',function() {
+            var nullLogger, mockDocument, testPageDom;
+
+            testPageDom = {
+                id: 'testpage'
+            };
+
+            nullLogger = {
+                log: function() {}
+            };
+
+            mockDocument = {
+                querySelector: function(string) {
+                    switch(string) {
+                    case '#testpage':
+                        return testPageDom;
+                    }
+                }
+            };
+
+            it('creates pages from document',function() {
+                var extractor, onDisplay, onHide, page;
+
+                extractor = new app.DocumentPageExtractor(nullLogger,
+                                                          mockDocument);
+
+                onDisplay = function() {
+                    return 1;
+                };
+                onHide = function() {
+                    return 2;
+                };
+
+                page = extractor.extract(testPageDom.id,onDisplay,onHide);
+
+                // FIXME: More careful examination of call contents
+                expect(page.id).toEqual(testPageDom.id);
+                expect(page.onDisplay).toBe(onDisplay);
+                expect(page.onHide).toBe(onHide);
+            });
+        });
     });

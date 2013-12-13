@@ -24,52 +24,60 @@
         </div>
 
         <div id="intro" class="page">
-            <p>Welcome to Barcode Agent. Scan a barcode to view or
-                submit product data.</p>
+            <div id="introcontent" class="pagecontent">
+                <p>Welcome to Barcode Agent. Scan a barcode to view
+                    or submit product data.</p>
+            </div>
         </div>
         <div id="productview" class="page">
-            <h1 id="productname">Product name</h1>
-            <img id="productimage" />
-            <div id="productcomments">
-                <h2>Comments</h2>
-                <div id="productcommentslist">
-                    <div class="productcomment">
-                        <div id="productcommentheader">
-                            <span class="commentby">by</span> <span
-                                class="commentdate">date</span>
+            <div id="productviewcontent" class="pagecontent">
+                <h1 id="productname">Product name</h1>
+                <img id="productimage" />
+                <div id="productcomments">
+                    <h2>Comments</h2>
+                    <div id="productcommentslist">
+                        <div class="productcomment">
+                            <div id="productcommentheader">
+                                <span class="commentby">by</span> <span
+                                    class="commentdate">date</span>
+                            </div>
+                            <p class="commenttext">text</p>
                         </div>
-                        <p class="commenttext">text</p>
                     </div>
                 </div>
             </div>
         </div>
         <div id="productnew" class="page">
-            <h1>Add new product</h1>
-            <p>
-                <label for="productnewbarcode">Barcode: </label> <br>
-                <input id="productnewbarcode" name="barcode" type="text"
-                    readonly>
-            </p>
-            <p>
-                <label for="productnewname">Product name: </label> <br>
-                <input id="productnewname" name="name" type="text"
-                    size="30" placeholder="Add name" />
-            </p>
-            <!-- TODO: Images -->
-            <p>
-                <input id="productnewsubmit" type="button"
-                    value="Submit">
-            </p>
+            <div id="productnewcontent" class="pagecontent">
+                <h1>Add new product</h1>
+                <p>
+                    <label for="productnewbarcode">Barcode: </label> <br>
+                    <input id="productnewbarcode" name="barcode"
+                        type="text" readonly>
+                </p>
+                <p>
+                    <label for="productnewname">Product name: </label> <br>
+                    <input id="productnewname" name="name" type="text"
+                        size="30" placeholder="Add name" />
+                </p>
+                <!-- TODO: Images -->
+                <p>
+                    <input id="productnewsubmit" type="button"
+                        value="Submit">
+                </p>
+            </div>
         </div>
 
         <div id="settings" class="page">
-            <h1>Application settings</h1>
-            <div id="debugsettings">
-                <p>
-                    <label for="serverurl">Server URL: </label> <br>
-                    <input id="serverurl" name="serverurl" type="url"
-                        size="30">
-                </p>
+            <div id="settingscontent" class="pagecontent">
+                <h1>Application settings</h1>
+                <div id="debugsettings">
+                    <p>
+                        <label for="serverurl">Server URL: </label> <br>
+                        <input id="serverurl" name="serverurl"
+                            type="url" size="30">
+                    </p>
+                </div>
             </div>
         </div>
     </div>

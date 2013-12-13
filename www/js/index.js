@@ -10,7 +10,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var Logger, Settings, Page, PageView, logger, defaultSettings, settings, pageView, BARCODES_URL, PRODUCTS_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
+    var Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
 
     // Logger constructor
     //
@@ -72,11 +72,14 @@ var app = (function() {
 
     // A single page of the application.
     //
-    // On-display and on-hide handlers can be registered at initialization time.
+    // Contains page id, dom page reference and on-display and on-hide handlers.
     // Default for both of these handlers is no-op.
-    Page = function(id,onDisplay,onHide) {
+    Page = function(id,domPage,onDisplay,onHide) {
         this.id = id;
 
+        // FIXME: domPage is mandatory. What to do if it is missing?
+
+        this.domPage = domPage;
         this.onDisplay = onDisplay || function() {};
         this.onHide = onHide || function() {};
     };
@@ -90,7 +93,7 @@ var app = (function() {
         this.logger = logger;
         this.document = document;
 
-        this.pages = [];
+        this.pages = {};
 
         this.currentPage = undefined;
         this.previousPage = undefined;
@@ -118,7 +121,7 @@ var app = (function() {
         //
         // Pages are referred to by their id's.
         gotoPage: function(newPageId,context) {
-            var newPage, currentId;
+            var newPage;
 
             newPage = this.pages[newPageId];
 
@@ -131,16 +134,14 @@ var app = (function() {
 
             this.logger.log('Opening page with id ' + newPageId);
 
-            currentId = null;
             // No current page when the first page is opened
             if(this.currentPage) {
-                currentId = this.currentPage.id;
                 this.currentPage.onHide(this.currentPage.id);
             }
 
             newPage.onDisplay(newPageId,context);
 
-            this.changeDisplay(currentId,newPage.id);
+            this.changeDisplay(this.currentPage,newPage);
 
             this.previousPage = this.currentPage;
             this.currentPage = newPage;
@@ -160,24 +161,47 @@ var app = (function() {
             this.logger.log('Going back to page with id ' +
                             this.previousPage.id);
 
-            this.currentPage.onHide(this.currentPageId);
+            this.currentPage.onHide(this.currentPage.id);
 
-            this.changeDisplay(this.currentPage.id,this.previousPage.id);
+            this.changeDisplay(this.currentPage,this.previousPage);
 
             this.currentPage = this.previousPage;
             this.previousPage = null;
         },
 
         // Utility for changing display values of both current and new page.
-        changeDisplay: function(currentId,newId) {
-            var currentPage, newPage;
-
-            currentPage = this.document.querySelector('#' + currentId);
+        changeDisplay: function(currentPage,newPage) {
             if(currentPage) {
-                currentPage.style.display = 'none';
+                currentPage.domPage.style.display = 'none';
             }
 
-            this.document.querySelector('#' + newId).style.display = 'block';
+            newPage.domPage.style.display = 'block';
+        }
+    };
+
+    // Extracts pages from dom tree
+    DocumentPageExtractor = function(logger,document) {
+        this.logger = logger;
+        this.document = document;
+    };
+
+    DocumentPageExtractor.prototype = {
+        // Given id, extracts that page from document and returns a Page object
+        // that has given on-display and on-hide handlers registered. If page
+        // is not found in document, logs a warning and returns null.
+        extract: function(id,onDisplay,onHide) {
+            var domPage;
+
+            domPage = this.document.querySelector('#' + id);
+
+            if(!domPage) {
+                this.logger.log('Did not find page with id ' +
+                                id +
+                                ' in document.');
+                return null;
+            }
+
+            return new Page(id,domPage,onDisplay,onHide);
         }
     };
 
@@ -255,17 +279,18 @@ var app = (function() {
         logger = new Logger('BarcodeAgent',window.console,notifier);
         settings = new Settings(logger,window.localStorage,defaultSettings);
         pageView = new PageView(logger,document);
+        pageExtractor = new DocumentPageExtractor(logger,document);
 
         bindEvents();
 
         // *** Sequence of IIFE's, each registering a single page. ***
 
         (function() {
-            pageView.addPage(new Page('intro'));
+            pageView.addPage(pageExtractor.extract('intro'));
         })();
 
         (function() {
-            templates.productView = $p('#productview').compile({
+            templates.productView = $p('#productviewcontent').compile({
                 '#productname': 'name',
                 '.productcomment': {
                     'comment<-comments': {
@@ -276,31 +301,35 @@ var app = (function() {
                 }
             });
 
-            pageView.addPage(new Page('productview',function(pageId,context) {
-                var product;
+            pageView.addPage(pageExtractor.extract('productview',
+                function(pageId,context) {
+                    var product;
 
-                // TODO: Handle all returned products somehow instead of using
-                // the
-                // first one.
-                product = context.products[0];
-                $p('#' + pageId).render(product,templates.productView);
-            }));
+                    // TODO: Handle all returned products somehow instead of
+                    // using
+                    // the
+                    // first one.
+                    product = context.products[0];
+                    $p('#' + pageId + 'content').render(product,
+                        templates.productView);
+                }));
         })();
 
         (function() {
-            templates.productNew = $p('#productnew').compile({
+            templates.productNew = $p('#productnewcontent').compile({
                 '#productnewbarcode@value': 'barcode',
                 '#productnewname@value': 'name'
             });
 
-            pageView.addPage(new Page('productnew',
+            pageView.addPage(pageExtractor.extract('productnew',
             // Context:
             // - barcode: product's barcode (read-only)
             // - name: suggestion for product name, user-editable, usually empty
             function(pageId,context) {
                 var page, nameElement, submitElement;
 
-                $p('#' + pageId).render(context,templates.productNew);
+                $p('#' + pageId + 'content').render(context,
+                    templates.productNew);
                 page = document.querySelector('#' + pageId);
 
                 // TODO: Image
@@ -328,32 +357,36 @@ var app = (function() {
             // implemented some kind of modal dialog.
             var settingsButton;
 
-            templates.settings = $p('#settings').compile({
+            templates.settings = $p('#settingscontent').compile({
                 '#serverurl@value': 'url'
             });
 
             settingsButton = document.querySelector('#settingsbutton');
-            pageView.addPage(new Page('settings',
-            // On display handler fills controls with current settings and
-            // changes
-            // settings button text.
-            function(pageId,context) {
-                var serverUrlInput;
+            pageView.addPage(pageExtractor.extract('settings',
+                // On display handler fills controls with current settings and
+                // changes
+                // settings button text.
+                function(pageId,context) {
+                    var serverUrlInput;
 
-                $p('#' + pageId).render(context,templates.settings);
+                    $p('#' + pageId + 'content').render(context,
+                        templates.settings);
 
-                serverUrlInput = document.getElementById('serverurl');
-                serverUrlInput.addEventListener('change',function() {
-                    logger.log('Setting server URL to "' + this.value + '"');
-                    settings.setItem('serverUrl',this.value);
-                },false);
+                    serverUrlInput = document.getElementById('serverurl');
+                    serverUrlInput.addEventListener('change',function() {
+                        logger
+                                .log('Setting server URL to "' +
+                                     this.value +
+                                     '"');
+                        settings.setItem('serverUrl',this.value);
+                    },false);
 
-                settingsButton.innerHTML = 'hide settings';
-            },
-            // On hide handler changes settings button text
-            function() {
-                settingsButton.innerHTML = 'view settings';
-            }));
+                    settingsButton.innerHTML = 'hide settings';
+                },
+                // On hide handler changes settings button text
+                function() {
+                    settingsButton.innerHTML = 'view settings';
+                }));
         })();
 
         pageView.gotoPage('intro');
@@ -369,8 +402,8 @@ var app = (function() {
 
         settingsButton = document.getElementById('settingsbutton');
         settingsButton.addEventListener('click',function() {
-            if(pageView.currentPageId === 'settings') {
-                pageView.previousPage();
+            if(pageView.currentPage.id === 'settings') {
+                pageView.gotoPreviousPage();
             } else {
                 context = {
                     'url': settings.getItem('serverUrl')
@@ -509,6 +542,7 @@ var app = (function() {
         Settings: Settings,
         Page: Page,
         PageView: PageView,
+        DocumentPageExtractor: DocumentPageExtractor,
         initialize: initialize
     };
 })();
