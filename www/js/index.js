@@ -74,6 +74,7 @@ var app = (function() {
     //
     // Contains page id, dom page reference and on-display and on-hide handlers.
     // Default for both of these handlers is no-op.
+    // TODO: add onDisplay,onHide and templated using a method.
     Page = function(id,domPage,onDisplay,onHide) {
         this.id = id;
 
@@ -206,6 +207,7 @@ var app = (function() {
     };
 
     // Collection of compiled PURE.js templates, one for each page
+    // TODO: Put templates inside Page objects
     templates = {};
 
     // Server URL components
