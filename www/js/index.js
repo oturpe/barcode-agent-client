@@ -309,7 +309,7 @@ var app = (function() {
 
             pageView.addPage(pageExtractor.extract('productview',
                 function(context) {
-                    var product, page, addCommentElement;
+                    var product, addCommentElement;
 
                     // TODO: Handle all returned products somehow instead of
                     // using
@@ -319,9 +319,7 @@ var app = (function() {
                     $p(contentSelector(this.id)).render(product,
                         templates.productView);
 
-                    page = document.querySelector('#' + this.id);
-
-                    addCommentElement = page.querySelector('#productcommentadd');
+                    addCommentElement = this.domPage.querySelector('#productcommentadd');
 
                     addCommentElement.addEventListener('click',function() {
                         var context;
@@ -363,16 +361,15 @@ var app = (function() {
             // - barcode: product's barcode (read-only)
             // - name: suggestion for product name, user-editable, usually empty
             function(context) {
-                var page, nameElement, submitElement;
+                var nameElement, submitElement;
 
                 $p(contentSelector(this.id)).render(context,
                     templates.productNew);
-                page = document.querySelector('#' + this.id);
 
                 // TODO: Image
 
-                nameElement = page.querySelector('#productnewname');
-                submitElement = page.querySelector('#productnewsubmit');
+                nameElement = this.domPage.querySelector('#productnewname');
+                submitElement = this.domPage.querySelector('#productnewsubmit');
 
                 nameElement.addEventListener('change',function() {
                     newProductInfo.name = this.value;
