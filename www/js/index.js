@@ -309,29 +309,29 @@ var app = (function() {
                         }
                     });
 
-            pageView.addPage(pageExtractor.extract('productview',
-                function(context) {
-                    var product, addCommentElement;
+            function onDisplay(context) {
+                var product, addCommentElement;
 
-                    // TODO: Handle all returned products somehow instead of
-                    // using
-                    // the
-                    // first one.
-                    product = context.products[0];
-                    $p(contentSelector(this.id)).render(product,
-                        templates.productView);
+                // TODO: Handle all returned products somehow instead of
+                // using the first one.
+                product = context.products[0];
+                $p(contentSelector(this.id)).render(product,
+                    templates.productView);
 
-                    addCommentElement = this.domPage.querySelector('#productcommentadd');
+                addCommentElement = this.domPage
+                        .querySelector('#productcommentadd');
 
-                    addCommentElement.addEventListener('click',function() {
-                        var context;
+                addCommentElement.addEventListener('click',function() {
+                    var context;
 
-                        context = {
-                            productName: product.name
-                        };
-                        pageView.gotoPage('commentadd',context);
-                    },false);
-                }));
+                    context = {
+                        productName: product.name
+                    };
+                    pageView.gotoPage('commentadd',context);
+                },false);
+            }
+
+            pageView.addPage(pageExtractor.extract('productview',onDisplay));
         })();
 
         (function() {
@@ -339,17 +339,18 @@ var app = (function() {
                 '#commentaddproduct': 'productName'
             });
 
-            pageView.addPage(pageExtractor.extract('commentadd',
-                // On-dislay handler context:
-                // - productName
-                function(context) {
-                    var product;
+            // Context:
+            // - productName: name of the product to be commented on
+            function onDisplay(context) {
+                var product;
 
-                    $p(contentSelector(this.id)).render(context,
-                        templates.commentAdd);
-                    
-                    // TODO: Functions for submit and cancel buttons.
-                }));
+                $p(contentSelector(this.id)).render(context,
+                    templates.commentAdd);
+
+                // TODO: Functions for submit and cancel buttons.
+            }
+
+            pageView.addPage(pageExtractor.extract('commentadd',onDisplay));
         })();
 
         (function() {
@@ -358,11 +359,10 @@ var app = (function() {
                 '#productnewname@value': 'name'
             });
 
-            pageView.addPage(pageExtractor.extract('productnew',
             // Context:
             // - barcode: product's barcode (read-only)
             // - name: suggestion for product name, user-editable, usually empty
-            function(context) {
+            function onDisplay(context) {
                 var nameElement, submitElement;
 
                 $p(contentSelector(this.id)).render(context,
@@ -385,7 +385,9 @@ var app = (function() {
                         newProductInfo.name,
                         newProductInfo.user);
                 },false);
-            }));
+            }
+
+            pageView.addPage(pageExtractor.extract('productnew',onDisplay));
         })();
 
         (function() {
@@ -398,31 +400,30 @@ var app = (function() {
             });
 
             settingsButton = document.querySelector('#settingsbutton');
-            pageView.addPage(pageExtractor.extract('settings',
-                // On display handler fills controls with current settings and
-                // changes
-                // settings button text.
-                function(context) {
-                    var serverUrlInput;
 
-                    $p(contentSelector(this.id)).render(context,
-                        templates.settings);
+            // Context:
+            // -url: current server url
+            function onDisplay(context) {
+                var serverUrlInput;
 
-                    serverUrlInput = document.getElementById('serverurl');
-                    serverUrlInput.addEventListener('change',function() {
-                        logger
-                                .log('Setting server URL to "' +
-                                     this.value +
-                                     '"');
-                        settings.setItem('serverUrl',this.value);
-                    },false);
+                $p(contentSelector(this.id)).render(context,templates.settings);
 
-                    settingsButton.innerHTML = 'hide settings';
-                },
-                // On hide handler changes settings button text
-                function() {
-                    settingsButton.innerHTML = 'view settings';
-                }));
+                serverUrlInput = document.getElementById('serverurl');
+                serverUrlInput.addEventListener('change',function() {
+                    logger.log('Setting server URL to "' + this.value + '"');
+                    settings.setItem('serverUrl',this.value);
+                },false);
+
+                settingsButton.innerHTML = 'hide settings';
+            }
+
+            // On hide handler changes settings button text
+            function onHide() {
+                settingsButton.innerHTML = 'view settings';
+            }
+
+            pageView
+                    .addPage(pageExtractor.extract('settings',onDisplay,onHide));
         })();
 
         pageView.gotoPage('intro');
