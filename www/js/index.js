@@ -10,7 +10,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var Logger, Settings, PageView, logger, defaultSettings, settings, pageView, BARCODES_URL, PRODUCTS_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
+    var Logger, Settings, Page, PageView, logger, defaultSettings, settings, pageView, BARCODES_URL, PRODUCTS_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
 
     // Logger constructor
     //
@@ -70,6 +70,17 @@ var app = (function() {
         }
     };
 
+    // A single page of the application.
+    //
+    // On-display and on-hide handlers can be registered at initialization time.
+    // Default for both of these handlers is no-op.
+    Page = function(id,onDisplay,onHide) {
+        this.id = id;
+
+        this.onDisplay = onDisplay || function() {};
+        this.onHide = onHide || function() {};
+    };
+
     // Contains all pages within one virtual page and allows switching between
     // them.
     //
@@ -78,8 +89,8 @@ var app = (function() {
     PageView = function(logger,document) {
         this.logger = logger;
         this.document = document;
-        this.displayHandlers = {};
-        this.hideHandlers = {};
+
+        this.pages = [];
 
         this.currentPageId = undefined;
         this.previousPageId = undefined;
@@ -91,14 +102,9 @@ var app = (function() {
         //
         // Assumes responsibility for viewing and hiding the page, hiding it
         // initially. To show the page, see method gotoPage.
-        addPage: function(id,onDisplay,onHide) {
-            this.logger.log('Added page ' + id + ' to page list');
-
-            onDisplay = onDisplay || function() {};
-            this.displayHandlers[id] = onDisplay;
-
-            onHide = onHide || function() {};
-            this.hideHandlers[id] = onHide;
+        addPage: function(page) {
+            this.logger.log('Added page ' + page.id + ' to page list');
+            this.pages[page.id] = page;
         },
 
         // Switches virtual page within the single page model. Context parameter
@@ -112,11 +118,11 @@ var app = (function() {
         //
         // Pages are referred to by their id's.
         gotoPage: function(newPageId,context) {
-            var hideHandler, displayHandler;
+            var page, hideHandler, displayHandler;
 
-            displayHandler = this.displayHandlers[newPageId];
+            page = this.pages[newPageId];
 
-            if(displayHandler === undefined) {
+            if(page === undefined) {
                 this.logger.log('ERROR: ' +
                                 'Cannot open page with unknown page id: ' +
                                 newPageId);
@@ -127,11 +133,11 @@ var app = (function() {
 
             // No current page id when the first page is opened
             if(this.currentPageId) {
-                hideHandler = this.hideHandlers[this.currentPageId];
+                hideHandler = this.pages[this.currentPageId].onHide;
                 hideHandler(this.currentPageId);
             }
 
-            displayHandler(newPageId,context);
+            page.onDisplay(newPageId,context);
 
             this.changeDisplay(this.currentPageId,newPageId);
 
@@ -153,7 +159,7 @@ var app = (function() {
             this.logger
                     .log('Going back to page with id ' + this.previousPageId);
 
-            this.hideHandlers[this.currentPageId](this.currentPageId);
+            this.pages[this.currentPageId].onHide(this.currentPageId);
 
             this.changeDisplay(this.currentPageId,this.previousPageId);
 
@@ -254,7 +260,7 @@ var app = (function() {
         // *** Sequence of IIFE's, each registering a single page. ***
 
         (function() {
-            pageView.addPage('intro');
+            pageView.addPage(new Page('intro'));
         })();
 
         (function() {
@@ -269,7 +275,7 @@ var app = (function() {
                 }
             });
 
-            pageView.addPage('productview',function(pageId,context) {
+            pageView.addPage(new Page('productview',function(pageId,context) {
                 var product;
 
                 // TODO: Handle all returned products somehow instead of using
@@ -277,7 +283,7 @@ var app = (function() {
                 // first one.
                 product = context.products[0];
                 $p('#' + pageId).render(product,templates.productView);
-            });
+            }));
         })();
 
         (function() {
@@ -286,7 +292,7 @@ var app = (function() {
                 '#productnewname@value': 'name'
             });
 
-            pageView.addPage('productnew',
+            pageView.addPage(new Page('productnew',
             // Context:
             // - barcode: product's barcode (read-only)
             // - name: suggestion for product name, user-editable, usually empty
@@ -313,7 +319,7 @@ var app = (function() {
                         newProductInfo.name,
                         newProductInfo.user);
                 },false);
-            });
+            }));
         })();
 
         (function() {
@@ -326,7 +332,7 @@ var app = (function() {
             });
 
             settingsButton = document.querySelector('#settingsbutton');
-            pageView.addPage('settings',
+            pageView.addPage(new Page('settings',
             // On display handler fills controls with current settings and
             // changes
             // settings button text.
@@ -346,7 +352,7 @@ var app = (function() {
             // On hide handler changes settings button text
             function() {
                 settingsButton.innerHTML = 'view settings';
-            });
+            }));
         })();
 
         pageView.gotoPage('intro');
@@ -500,6 +506,7 @@ var app = (function() {
     return {
         Logger: Logger,
         Settings: Settings,
+        Page: Page,
         PageView: PageView,
         initialize: initialize
     };

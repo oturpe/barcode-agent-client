@@ -107,72 +107,78 @@ describe('Barcode Agent',
             });
         });
 
+        describe('Page',function() {
+            var page, pageId, onDisplay, onHide;
+
+            pageId = "testpage";
+
+            it('sets default (no-op) on-display handler if none is given',
+                function() {
+                    page = new app.Page(pageId);
+
+                    expect(page.onDisplay).toBeTruthy();
+                });
+
+            it('sets default (no-op) on-hide handler if none is given',
+                function() {
+                    page = new app.Page(pageId);
+
+                    expect(page.onHide).toBeTruthy();
+                });
+        });
+
         describe('PageView',
             function() {
 
-                var nullLogger, mockDocument, pageView, testPage, otherPage1, otherPage2;
+                var nullLogger, mockDocument, pageView, testPageMarkup, otherPage1Markup, otherPage2Markup;
 
                 nullLogger = {
                     log: function() {}
                 };
 
+                // Mock for html document and pages contained within.
                 mockDocument = {
                     querySelector: function(pageSelector) {
                         switch(pageSelector) {
                         case '#testpage':
-                            return testPage;
+                            return testPageMarkup;
                         case '#otherpage-1':
-                            return otherPage1;
+                            return otherPage1Markup;
                         case '#otherpage-2':
-                            return otherPage2;
+                            return otherPage2Markup;
                         }
                     }
                 };
 
                 beforeEach(function() {
                     pageView = new app.PageView(nullLogger,mockDocument);
-                    testPage = {
+                    testPageMarkup = {
                         id: 'testpage',style: {}
                     };
-                    otherPage1 = {
+                    otherPage1Markup = {
                         id: 'otherpage-1',style: {}
                     };
-                    otherPage2 = {
+                    otherPage2Markup = {
                         id: 'otherpage-2',style: {}
                     };
                 });
 
-                it('sets default (no-op) on-display handler if none is given',
-                    function() {
-                        pageView.addPage(testPage.id);
+                it('invokes ondisplay handler on page open',function() {
+                    var onDisplay, testPage, context;
 
-                        expect(pageView.displayHandlers['testpage'])
-                                .toBeTruthy();
-                    });
+                    context = {
+                        a: 'a'
+                    };
 
-                it('sets default (no-op) on-hide handler if none is given',
-                    function() {
-                        pageView.addPage(testPage.id);
+                    onDisplay = jasmine.createSpy('ondisplay');
+                    testPage = new app.Page(testPageMarkup.id,onDisplay);
+                    pageView.addPage(testPage);
 
-                        expect(pageView.hideHandlers['testpage']).toBeTruthy();
-                    });
+                    pageView.gotoPage(testPageMarkup.id,context);
 
-                it('invokes ondisplay handler on page open',
-                    function() {
-                        var onDisplay, context;
-
-                        onDisplay = jasmine.createSpy('ondisplay');
-                        context = {
-                            a: 'a'
-                        };
-
-                        pageView.addPage(testPage.id,onDisplay);
-
-                        pageView.gotoPage(testPage.id,context);
-
-                        expect(onDisplay).toHaveBeenCalledWith(testPage.id,
-                            context);
-                    });
+                    expect(onDisplay).toHaveBeenCalledWith(testPageMarkup.id,
+                        context);
+                });
 
                 it('invokes onhide handler of the previous page on page open',
                     function() {
@@ -180,58 +186,63 @@ describe('Barcode Agent',
 
                         onHide = jasmine.createSpy('onhide');
 
-                        pageView.addPage(testPage.id,null,onHide);
-                        pageView.addPage(otherPage1.id);
-                        pageView.addPage(otherPage2.id);
+                        pageView.addPage(new app.Page(testPageMarkup.id,
+                                                      null,
+                                                      onHide));
+                        pageView.addPage(new app.Page(otherPage1Markup.id));
+                        pageView.addPage(otherPage2Markup.id);
 
-                        pageView.gotoPage(testPage.id);
-                        pageView.gotoPage(otherPage1.id);
+                        pageView.gotoPage(testPageMarkup.id);
+                        pageView.gotoPage(otherPage1Markup.id);
 
-                        expect(onHide).toHaveBeenCalledWith(testPage.id);
+                        expect(onHide).toHaveBeenCalledWith(testPageMarkup.id);
                     });
 
-                it('displays only selected page on page open',function() {
-                    pageView.addPage(testPage.id);
-                    pageView.addPage(otherPage1.id);
-                    pageView.addPage(otherPage2.id);
+                it('displays only selected page on page open',
+                    function() {
+                        pageView.addPage(new app.Page(testPageMarkup.id));
+                        pageView.addPage(new app.Page(otherPage1Markup.id));
+                        pageView.addPage(new app.Page(otherPage2Markup.id));
 
-                    pageView.gotoPage(otherPage1.id);
-                    pageView.gotoPage(testPage.id);
+                        pageView.gotoPage(otherPage1Markup.id);
+                        pageView.gotoPage(testPageMarkup.id);
 
-                    expect(testPage.style.display).toEqual('block');
-                    expect(otherPage1.style.display).not.toEqual('block');
-                    expect(otherPage2.style.display).not.toEqual('block');
-                });
+                        expect(testPageMarkup.style.display).toEqual('block');
+                        expect(otherPage1Markup.style.display).not
+                                .toEqual('block');
+                        expect(otherPage2Markup.style.display).not
+                                .toEqual('block');
+                    });
 
                 it('going to page updates current page id',function() {
-                    pageView.addPage(testPage.id);
+                    pageView.addPage(new app.Page(testPageMarkup.id));
 
-                    pageView.gotoPage(testPage.id);
+                    pageView.gotoPage(testPageMarkup.id);
 
-                    expect(pageView.currentPageId).toEqual(testPage.id);
+                    expect(pageView.currentPageId).toEqual(testPageMarkup.id);
                 });
 
                 it('can go back to previous page',function() {
-                    pageView.addPage(testPage.id);
-                    pageView.addPage(otherPage1.id);
+                    pageView.addPage(new app.Page(testPageMarkup.id));
+                    pageView.addPage(new app.Page(otherPage1Markup.id));
 
-                    pageView.gotoPage(testPage.id);
-                    pageView.gotoPage(otherPage1.id);
+                    pageView.gotoPage(testPageMarkup.id);
+                    pageView.gotoPage(otherPage1Markup.id);
                     pageView.previousPage();
 
-                    expect(testPage.style.display).toEqual('block');
-                    expect(otherPage1.style.display).toEqual('none');
+                    expect(testPageMarkup.style.display).toEqual('block');
+                    expect(otherPage1Markup.style.display).toEqual('none');
                 });
 
                 it('going to previous page updates current page id',function() {
-                    pageView.addPage(testPage.id);
-                    pageView.addPage(otherPage1.id);
+                    pageView.addPage(new app.Page(testPageMarkup.id));
+                    pageView.addPage(new app.Page(otherPage1Markup.id));
 
-                    pageView.gotoPage(testPage.id);
-                    pageView.gotoPage(otherPage1.id);
+                    pageView.gotoPage(testPageMarkup.id);
+                    pageView.gotoPage(otherPage1Markup.id);
                     pageView.previousPage();
 
-                    expect(pageView.currentPageId).toEqual(testPage.id);
+                    expect(pageView.currentPageId).toEqual(testPageMarkup.id);
                 });
 
                 it('going to previous page does not fire ondisplay events',
@@ -240,30 +251,34 @@ describe('Barcode Agent',
 
                         onDisplay = jasmine.createSpy('ondisplay');
 
-                        pageView.addPage(testPage.id,onDisplay);
-                        pageView.addPage(otherPage1.id);
+                        pageView.addPage(new app.Page(testPageMarkup.id,
+                                                      onDisplay));
+                        pageView.addPage(new app.Page(otherPage1Markup.id));
 
-                        pageView.gotoPage(testPage.id);
-                        pageView.gotoPage(otherPage1.id);
+                        pageView.gotoPage(testPageMarkup.id);
+                        pageView.gotoPage(otherPage1Markup.id);
                         pageView.previousPage();
 
                         expect(onDisplay.calls.length).toEqual(1);
                     });
 
-                it('going to previous page fires onhide events',function() {
-                    var onHide;
+                it('going to previous page fires onhide events',
+                    function() {
+                        var onHide;
 
-                    onHide = jasmine.createSpy('onhide');
+                        onHide = jasmine.createSpy('onhide');
 
-                    pageView.addPage(testPage.id,null,onHide);
-                    pageView.addPage(otherPage1.id);
+                        pageView.addPage(new app.Page(testPageMarkup.id,
+                                                      null,
+                                                      onHide));
+                        pageView.addPage(new app.Page(otherPage1Markup.id));
 
-                    pageView.gotoPage(otherPage1.id);
-                    pageView.gotoPage(testPage.id);
-                    pageView.previousPage();
+                        pageView.gotoPage(otherPage1Markup.id);
+                        pageView.gotoPage(testPageMarkup.id);
+                        pageView.previousPage();
 
-                    expect(onHide.calls.length).toEqual(1);
-                });
+                        expect(onHide.calls.length).toEqual(1);
+                    });
 
                 // TODO: What should happen if we go to previous page twice, or
                 // if there
