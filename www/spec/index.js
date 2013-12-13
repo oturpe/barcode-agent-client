@@ -214,12 +214,15 @@ describe('Barcode Agent',
                                 .toEqual('block');
                     });
 
-                it('going to page updates current page id',function() {
-                    pageView.addPage(new app.Page(testPageMarkup.id));
+                it('going to page updates current page',function() {
+                    var testPage;
+
+                    testPage = new app.Page(testPageMarkup.id);
+                    pageView.addPage(testPage);
 
                     pageView.gotoPage(testPageMarkup.id);
 
-                    expect(pageView.currentPageId).toEqual(testPageMarkup.id);
+                    expect(pageView.currentPage).toEqual(testPage);
                 });
 
                 it('can go back to previous page',function() {
@@ -228,21 +231,25 @@ describe('Barcode Agent',
 
                     pageView.gotoPage(testPageMarkup.id);
                     pageView.gotoPage(otherPage1Markup.id);
-                    pageView.previousPage();
+                    pageView.gotoPreviousPage();
 
                     expect(testPageMarkup.style.display).toEqual('block');
                     expect(otherPage1Markup.style.display).toEqual('none');
                 });
 
-                it('going to previous page updates current page id',function() {
-                    pageView.addPage(new app.Page(testPageMarkup.id));
+                it('going to previous page updates current page',function() {
+                    var testPage;
+
+                    testPage = new app.Page(testPageMarkup.id)
+
+                    pageView.addPage(testPage);
                     pageView.addPage(new app.Page(otherPage1Markup.id));
 
                     pageView.gotoPage(testPageMarkup.id);
                     pageView.gotoPage(otherPage1Markup.id);
-                    pageView.previousPage();
+                    pageView.gotoPreviousPage();
 
-                    expect(pageView.currentPageId).toEqual(testPageMarkup.id);
+                    expect(pageView.currentPage).toEqual(testPage);
                 });
 
                 it('going to previous page does not fire ondisplay events',
@@ -257,7 +264,7 @@ describe('Barcode Agent',
 
                         pageView.gotoPage(testPageMarkup.id);
                         pageView.gotoPage(otherPage1Markup.id);
-                        pageView.previousPage();
+                        pageView.gotoPreviousPage();
 
                         expect(onDisplay.calls.length).toEqual(1);
                     });
@@ -275,7 +282,7 @@ describe('Barcode Agent',
 
                         pageView.gotoPage(otherPage1Markup.id);
                         pageView.gotoPage(testPageMarkup.id);
-                        pageView.previousPage();
+                        pageView.gotoPreviousPage();
 
                         expect(onHide.calls.length).toEqual(1);
                     });

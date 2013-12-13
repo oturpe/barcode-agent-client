@@ -92,8 +92,8 @@ var app = (function() {
 
         this.pages = [];
 
-        this.currentPageId = undefined;
-        this.previousPageId = undefined;
+        this.currentPage = undefined;
+        this.previousPage = undefined;
     };
 
     PageView.prototype = {
@@ -118,11 +118,11 @@ var app = (function() {
         //
         // Pages are referred to by their id's.
         gotoPage: function(newPageId,context) {
-            var page, hideHandler, displayHandler;
+            var newPage, currentId;
 
-            page = this.pages[newPageId];
+            newPage = this.pages[newPageId];
 
-            if(page === undefined) {
+            if(newPage === undefined) {
                 this.logger.log('ERROR: ' +
                                 'Cannot open page with unknown page id: ' +
                                 newPageId);
@@ -131,18 +131,19 @@ var app = (function() {
 
             this.logger.log('Opening page with id ' + newPageId);
 
-            // No current page id when the first page is opened
-            if(this.currentPageId) {
-                hideHandler = this.pages[this.currentPageId].onHide;
-                hideHandler(this.currentPageId);
+            currentId = null;
+            // No current page when the first page is opened
+            if(this.currentPage) {
+                currentId = this.currentPage.id;
+                this.currentPage.onHide(this.currentPage.id);
             }
 
-            page.onDisplay(newPageId,context);
+            newPage.onDisplay(newPageId,context);
 
-            this.changeDisplay(this.currentPageId,newPageId);
+            this.changeDisplay(currentId,newPage.id);
 
-            this.previousPageId = this.currentPageId;
-            this.currentPageId = newPageId;
+            this.previousPage = this.currentPage;
+            this.currentPage = newPage;
         },
 
         // Displays the page that was visible before current page. This method
@@ -153,18 +154,18 @@ var app = (function() {
         // Note that on-hide handler of hidden page is called, but on-display
         // of opened (previous) page is not called as it is expected that the
         // page is still in the state where it was when it was closed.
-        previousPage: function() {
+        gotoPreviousPage: function() {
             var pages;
 
-            this.logger
-                    .log('Going back to page with id ' + this.previousPageId);
+            this.logger.log('Going back to page with id ' +
+                            this.previousPage.id);
 
-            this.pages[this.currentPageId].onHide(this.currentPageId);
+            this.currentPage.onHide(this.currentPageId);
 
-            this.changeDisplay(this.currentPageId,this.previousPageId);
+            this.changeDisplay(this.currentPage.id,this.previousPage.id);
 
-            this.currentPageId = this.previousPageId;
-            this.previousPageId = null;
+            this.currentPage = this.previousPage;
+            this.previousPage = null;
         },
 
         // Utility for changing display values of both current and new page.
