@@ -471,7 +471,7 @@ var app = (function() {
             request.open('GET',url,true);
 
             request.onreadystatechange = function() {
-                if(request.readyState !== 4)
+                if(request.readyState !== this.DONE)
                     return;
 
                 if(request.status === 200) {
@@ -520,8 +520,9 @@ var app = (function() {
                 true);
 
             request.onreadystatechange = function() {
-                if(request.readyState !== 4)
+                if(request.readyState !== this.DONE) {
                     return;
+                }
 
                 if(request.status === 201) {
                     logger.notify(Logger.INFO,'Product submitted');
