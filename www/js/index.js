@@ -487,6 +487,8 @@ var app = (function() {
                     };
 
                     pageView.gotoPage('productnew',newProductInfo);
+                } else if(request.status === 0) {
+                    logger.notify(Logger.ERROR,'Could not reach server');
                 } else {
                     message = 'Internal error: Unexpected status code ' +
                               request.status;
