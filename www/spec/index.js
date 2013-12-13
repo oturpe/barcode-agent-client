@@ -204,8 +204,7 @@ describe('Barcode Agent',
 
                     pageView.gotoPage(testPageDom.id,context);
 
-                    expect(onDisplay).toHaveBeenCalledWith(testPageDom.id,
-                        context);
+                    expect(onDisplay).toHaveBeenCalledWith(context);
                 });
 
                 it('invokes onhide handler of the previous page on page open',

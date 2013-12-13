@@ -10,7 +10,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, newProductInfo, toBarcodeURL, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
+    var Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, newProductInfo, toBarcodeURL, toQueryString, contentSelector, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
 
     // Logger constructor
     //
@@ -139,7 +139,7 @@ var app = (function() {
                 this.currentPage.onHide(this.currentPage.id);
             }
 
-            newPage.onDisplay(newPageId,context);
+            newPage.onDisplay(context);
 
             this.changeDisplay(this.currentPage,newPage);
 
@@ -237,6 +237,11 @@ var app = (function() {
         return query;
     };
 
+    // Create selector for choosing page content dom element
+    contentSelector = function(pageId) {
+        return '#' + pageId + 'content';
+    };
+
     // Application Constructor
     initialize = function() {
         var notifier, statusTextElement, settingsButton;
@@ -290,19 +295,20 @@ var app = (function() {
         })();
 
         (function() {
-            templates.productView = $p('#productviewcontent').compile({
-                '#productname': 'name',
-                '.productcomment': {
-                    'comment<-comments': {
-                        '.commentby': 'comment.by',
-                        '.commentdate': 'comment.date',
-                        '.commenttext': 'comment.text'
-                    }
-                }
-            });
+            templates.productView = $p(contentSelector('productview'))
+                    .compile({
+                        '#productname': 'name',
+                        '.productcomment': {
+                            'comment<-comments': {
+                                '.commentby': 'comment.by',
+                                '.commentdate': 'comment.date',
+                                '.commenttext': 'comment.text'
+                            }
+                        }
+                    });
 
             pageView.addPage(pageExtractor.extract('productview',
-                function(pageId,context) {
+                function(context) {
                     var product;
 
                     // TODO: Handle all returned products somehow instead of
@@ -310,13 +316,13 @@ var app = (function() {
                     // the
                     // first one.
                     product = context.products[0];
-                    $p('#' + pageId + 'content').render(product,
+                    $p(contentSelector(this.id)).render(product,
                         templates.productView);
                 }));
         })();
 
         (function() {
-            templates.productNew = $p('#productnewcontent').compile({
+            templates.productNew = $p(contentSelector('productnew')).compile({
                 '#productnewbarcode@value': 'barcode',
                 '#productnewname@value': 'name'
             });
@@ -325,12 +331,12 @@ var app = (function() {
             // Context:
             // - barcode: product's barcode (read-only)
             // - name: suggestion for product name, user-editable, usually empty
-            function(pageId,context) {
+            function(context) {
                 var page, nameElement, submitElement;
 
-                $p('#' + pageId + 'content').render(context,
+                $p(contentSelector(this.id)).render(context,
                     templates.productNew);
-                page = document.querySelector('#' + pageId);
+                page = document.querySelector('#' + this.id);
 
                 // TODO: Image
 
@@ -357,7 +363,7 @@ var app = (function() {
             // implemented some kind of modal dialog.
             var settingsButton;
 
-            templates.settings = $p('#settingscontent').compile({
+            templates.settings = $p(contentSelector('settings')).compile({
                 '#serverurl@value': 'url'
             });
 
@@ -366,10 +372,10 @@ var app = (function() {
                 // On display handler fills controls with current settings and
                 // changes
                 // settings button text.
-                function(pageId,context) {
+                function(context) {
                     var serverUrlInput;
 
-                    $p('#' + pageId + 'content').render(context,
+                    $p(contentSelector(this.id)).render(context,
                         templates.settings);
 
                     serverUrlInput = document.getElementById('serverurl');
