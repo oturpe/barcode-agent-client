@@ -209,8 +209,8 @@ var app = (function() {
     templates = {};
 
     // Server URL components
-    BARCODES_URL = '/barcodes';
-    PRODUCTS_URL = '/products';
+    BARCODES_URL = '/barcodes.cgi';
+    PRODUCTS_URL = '/products.cgi';
 
     // Variable storing details about new product
     newProductInfo = null;
@@ -309,7 +309,7 @@ var app = (function() {
 
             pageView.addPage(pageExtractor.extract('productview',
                 function(context) {
-                    var product;
+                    var product, page, addCommentElement;
 
                     // TODO: Handle all returned products somehow instead of
                     // using
@@ -318,6 +318,37 @@ var app = (function() {
                     product = context.products[0];
                     $p(contentSelector(this.id)).render(product,
                         templates.productView);
+
+                    page = document.querySelector('#' + this.id);
+
+                    addCommentElement = page.querySelector('#productcommentadd');
+
+                    addCommentElement.addEventListener('click',function() {
+                        var context;
+
+                        context = {
+                            productName: product.name
+                        };
+                        pageView.gotoPage('commentadd',context);
+                    },false);
+                }));
+        })();
+
+        (function() {
+            templates.commentAdd = $p(contentSelector('commentadd')).compile({
+                '#commentaddproduct': 'productName'
+            });
+
+            pageView.addPage(pageExtractor.extract('commentadd',
+                // On-dislay handler context:
+                // - productName
+                function(context) {
+                    var product;
+
+                    $p(contentSelector(this.id)).render(context,
+                        templates.commentAdd);
+                    
+                    // TODO: Functions for submit and cancel buttons.
                 }));
         })();
 

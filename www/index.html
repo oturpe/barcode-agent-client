@@ -35,6 +35,10 @@
                 <img id="productimage" />
                 <div id="productcomments">
                     <h2>Comments</h2>
+                    <p>
+                        <input id="productcommentadd" type="button"
+                            value="Add comment">
+                    </p>
                     <div id="productcommentslist">
                         <div class="productcomment">
                             <div id="productcommentheader">
@@ -45,6 +49,29 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+        <div id="commentadd" class="page">
+            <div id="commentaddcontent" class="pagecontent">
+                <h1 id="commentaddheader">
+                    Comment on <span id="commentaddproduct">product</span>
+                </h1>
+                <p>
+                    <label for="commentadduser">Name: </label> <input
+                        id="commentadduser" name="user" type="text">
+                </p>
+                <p>
+                    <label for="commentaddtext">Comment: </label> <input
+                        id="commentaddtext" name="text" type="text">
+                </p>
+                <p>
+                    <input id="commentaddsubmit" type="button"
+                        value="Submit">
+                </p>
+                <p>
+                    <input id="commentaddcancel" type="button"
+                        value="Cancel">
+                </p>
             </div>
         </div>
         <div id="productnew" class="page">
