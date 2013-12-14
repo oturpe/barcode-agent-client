@@ -141,8 +141,10 @@ describe('Barcode Agent',
                 };
 
                 beforeEach(function() {
-                    function mockPure() {return mockRenderer;};
-                    
+                    function mockPure() {
+                        return mockRenderer;
+                    }
+
                     pageView = new app.PageView(nullLogger,mockPure);
                     testPageDom = {
                         id: 'testpage',style: {}
