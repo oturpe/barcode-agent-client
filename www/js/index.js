@@ -230,8 +230,9 @@ var app = (function() {
         for(i = 0; i < length; i += 1) {
             key = keys[i];
 
-            if(i > 0)
+            if(i > 0) {
                 query += '&';
+            }
 
             query += key + '=' + encodeURIComponent(obj[key]);
         }
@@ -294,7 +295,7 @@ var app = (function() {
 
         (function() {
             pageView.addPage(pageExtractor.extract('intro'));
-        })();
+        }());
 
         (function() {
             templates.productView = $p(contentSelector('productview'))
@@ -332,7 +333,7 @@ var app = (function() {
             }
 
             pageView.addPage(pageExtractor.extract('productview',onDisplay));
-        })();
+        }());
 
         (function() {
             templates.commentAdd = $p(contentSelector('commentadd')).compile({
@@ -351,7 +352,7 @@ var app = (function() {
             }
 
             pageView.addPage(pageExtractor.extract('commentadd',onDisplay));
-        })();
+        }());
 
         (function() {
             templates.productNew = $p(contentSelector('productnew')).compile({
@@ -388,7 +389,7 @@ var app = (function() {
             }
 
             pageView.addPage(pageExtractor.extract('productnew',onDisplay));
-        })();
+        }());
 
         (function() {
             // FIXME: This kind of additional info page should probably be
@@ -424,7 +425,7 @@ var app = (function() {
 
             pageView
                     .addPage(pageExtractor.extract('settings',onDisplay,onHide));
-        })();
+        }());
 
         pageView.gotoPage('intro');
     };
@@ -502,8 +503,9 @@ var app = (function() {
             request.open('GET',url,true);
 
             request.onreadystatechange = function() {
-                if(request.readyState !== this.DONE)
+                if(request.readyState !== this.DONE) {
                     return;
+                }
 
                 if(request.status === 200) {
                     logger.notify(Logger.INFO,'Product found');
@@ -585,4 +587,4 @@ var app = (function() {
         DocumentPageExtractor: DocumentPageExtractor,
         initialize: initialize
     };
-})();
+}());
