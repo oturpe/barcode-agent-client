@@ -72,15 +72,20 @@ var app = (function() {
 
     // A single page of the application.
     //
-    // Contains page id, dom page reference and on-display and on-hide handlers.
-    // Default for both of these handlers is no-op.
-    // TODO: add onDisplay,onHide and templated using a method.
-    Page = function(id,domPage,onDisplay,onHide) {
+    // Contains page id, dom page reference, html template and on-display and
+    // on-hide handlers.
+    //
+    // Default for both handlers is no-op. Falsy template indicates that no
+    // template rendering is to be performed.
+
+    // TODO: add onDisplay,onHide and template using a method.
+    Page = function(id,domPage,template,onDisplay,onHide) {
         this.id = id;
 
         // FIXME: domPage is mandatory. What to do if it is missing?
 
         this.domPage = domPage;
+        this.template = template;
         this.onDisplay = onDisplay || function() {};
         this.onHide = onHide || function() {};
     };
@@ -88,11 +93,12 @@ var app = (function() {
     // Contains all pages within one virtual page and allows switching between
     // them.
     //
-    // Initialization of page with given id is handled by specialized
-    // handler function, registered with addPage method.
-    PageView = function(logger,document) {
+    // Input is logger for logging, dom document that contains the pages to be
+    // registered and PURE.js renderer for page templates.
+    PageView = function(logger,document,renderer) {
         this.logger = logger;
         this.document = document;
+        this.renderer = renderer;
 
         this.pages = {};
 
@@ -117,10 +123,11 @@ var app = (function() {
         // The specific actions performed by this method are:
         // 1. Adjusting display values of page elements so that only the new
         // page remains visible.
-        // 2. Calling on-display and on-hide handlers of the pages.
-        // 3. Updating current and previous page id member variables.
+        // 2. Rendering new page's content from page template.
+        // 3. Calling on-display and on-hide handlers of the pages.
+        // 4. Updating current and previous page member variables.
         //
-        // Pages are referred to by their id's.
+        // Page to be openred is referred to by its id.
         gotoPage: function(newPageId,context) {
             var newPage;
 
@@ -140,6 +147,10 @@ var app = (function() {
                 this.currentPage.onHide(this.currentPage.id);
             }
 
+            if(newPage.template) {
+                this.renderer(contentSelector(newPage.id))
+                        .render(context,newPage.template);
+            }
             newPage.onDisplay(context);
 
             this.changeDisplay(this.currentPage,newPage);
@@ -154,8 +165,9 @@ var app = (function() {
         // one page long and this method does not update it.
         //
         // Note that on-hide handler of hidden page is called, but on-display
-        // of opened (previous) page is not called as it is expected that the
-        // page is still in the state where it was when it was closed.
+        // of opened (previous) page is not called, nor is it templated as it
+        // is expected that the page is still in the state where it was when it
+        // was closed.
         gotoPreviousPage: function() {
             var pages;
 
@@ -190,7 +202,7 @@ var app = (function() {
         // Given id, extracts that page from document and returns a Page object
         // that has given on-display and on-hide handlers registered. If page
         // is not found in document, logs a warning and returns null.
-        extract: function(id,onDisplay,onHide) {
+        extract: function(id,template,onDisplay,onHide) {
             var domPage;
 
             domPage = this.document.querySelector('#' + id);
@@ -202,7 +214,7 @@ var app = (function() {
                 return null;
             }
 
-            return new Page(id,domPage,onDisplay,onHide);
+            return new Page(id,domPage,template,onDisplay,onHide);
         }
     };
 
@@ -286,7 +298,7 @@ var app = (function() {
 
         logger = new Logger('BarcodeAgent',window.console,notifier);
         settings = new Settings(logger,window.localStorage,defaultSettings);
-        pageView = new PageView(logger,document);
+        pageView = new PageView(logger,document,$p);
         pageExtractor = new DocumentPageExtractor(logger,document);
 
         bindEvents();
@@ -298,26 +310,22 @@ var app = (function() {
         }());
 
         (function() {
-            templates.productView = $p(contentSelector('productview'))
-                    .compile({
-                        '#productname': 'name',
-                        '.productcomment': {
-                            'comment<-comments': {
-                                '.commentby': 'comment.by',
-                                '.commentdate': 'comment.date',
-                                '.commenttext': 'comment.text'
-                            }
-                        }
-                    });
+            var template;
+
+            // TODO: Handle a list of products
+            template = $p(contentSelector('productview')).compile({
+                '#productname': 'name',
+                '.productcomment': {
+                    'comment<-comments': {
+                        '.commentby': 'comment.by',
+                        '.commentdate': 'comment.date',
+                        '.commenttext': 'comment.text'
+                    }
+                }
+            });
 
             function onDisplay(context) {
                 var product, addCommentElement;
-
-                // TODO: Handle all returned products somehow instead of
-                // using the first one.
-                product = context.products[0];
-                $p(contentSelector(this.id)).render(product,
-                    templates.productView);
 
                 addCommentElement = this.domPage
                         .querySelector('#productcommentadd');
@@ -332,42 +340,37 @@ var app = (function() {
                 },false);
             }
 
-            pageView.addPage(pageExtractor.extract('productview',onDisplay));
+            pageView.addPage(pageExtractor.extract('productview',
+                                                   template,
+                                                   onDisplay));
         }());
 
         (function() {
-            templates.commentAdd = $p(contentSelector('commentadd')).compile({
+            var template;
+
+            template = $p(contentSelector('commentadd')).compile({
                 '#commentaddproduct': 'productName'
             });
 
-            // Context:
-            // - productName: name of the product to be commented on
             function onDisplay(context) {
-                var product;
-
-                $p(contentSelector(this.id)).render(context,
-                    templates.commentAdd);
-
-                // TODO: Functions for submit and cancel buttons.
+            // TODO: Functions for submit and cancel buttons.
             }
 
-            pageView.addPage(pageExtractor.extract('commentadd',onDisplay));
+            pageView.addPage(pageExtractor.extract('commentadd',
+                                                   template,
+                                                   onDisplay));
         }());
 
         (function() {
-            templates.productNew = $p(contentSelector('productnew')).compile({
+            var template;
+
+            template = $p(contentSelector('productnew')).compile({
                 '#productnewbarcode@value': 'barcode',
                 '#productnewname@value': 'name'
             });
 
-            // Context:
-            // - barcode: product's barcode (read-only)
-            // - name: suggestion for product name, user-editable, usually empty
             function onDisplay(context) {
                 var nameElement, submitElement;
-
-                $p(contentSelector(this.id)).render(context,
-                    templates.productNew);
 
                 // TODO: Image
 
@@ -383,31 +386,29 @@ var app = (function() {
 
                 submitElement.addEventListener('click',function() {
                     submit(newProductInfo.barcode,
-                        newProductInfo.name,
-                        newProductInfo.user);
+                           newProductInfo.name,
+                           newProductInfo.user);
                 },false);
             }
 
-            pageView.addPage(pageExtractor.extract('productnew',onDisplay));
+            pageView.addPage(pageExtractor.extract('productnew',
+                                                   template,
+                                                   onDisplay));
         }());
 
         (function() {
             // FIXME: This kind of additional info page should probably be
             // implemented some kind of modal dialog.
-            var settingsButton;
+            var template, settingsButton;
 
-            templates.settings = $p(contentSelector('settings')).compile({
+            template = $p(contentSelector('settings')).compile({
                 '#serverurl@value': 'url'
             });
 
             settingsButton = document.querySelector('#settingsbutton');
 
-            // Context:
-            // -url: current server url
             function onDisplay(context) {
                 var serverUrlInput;
-
-                $p(contentSelector(this.id)).render(context,templates.settings);
 
                 serverUrlInput = document.getElementById('serverurl');
                 serverUrlInput.addEventListener('change',function() {
@@ -423,8 +424,10 @@ var app = (function() {
                 settingsButton.innerHTML = 'view settings';
             }
 
-            pageView
-                    .addPage(pageExtractor.extract('settings',onDisplay,onHide));
+            pageView.addPage(pageExtractor.extract('settings',
+                                                   template,
+                                                   onDisplay,
+                                                   onHide));
         }());
 
         pageView.gotoPage('intro');
@@ -511,7 +514,9 @@ var app = (function() {
                     logger.notify(Logger.INFO,'Product found');
 
                     response = JSON.parse(request.responseText);
-                    pageView.gotoPage('productview',response);
+                    // TODO: Pass the whole list as soon as productview
+                    // template supports a list.
+                    pageView.gotoPage('productview',response.products[0]);
                 } else if(request.status === 404) {
                     logger.notify(Logger.INFO,'No data available');
 
@@ -549,8 +554,8 @@ var app = (function() {
         try {
             request = new XMLHttpRequest();
             request.open('POST',
-                settings.getItem('serverUrl') + PRODUCTS_URL,
-                true);
+                         settings.getItem('serverUrl') + PRODUCTS_URL,
+                         true);
 
             request.onreadystatechange = function() {
                 if(request.readyState !== this.DONE) {

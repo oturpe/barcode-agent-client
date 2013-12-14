@@ -130,7 +130,7 @@ describe('Barcode Agent',
         describe('PageView',
             function() {
 
-                var nullLogger, mockDocument, pageView, testPageDom, otherPageDom1, otherPageDom2;
+                var nullLogger, mockDocument, mockRenderer, pageView, testPageDom, otherPageDom1, otherPageDom2;
 
                 nullLogger = {
                     log: function() {}
@@ -150,8 +150,16 @@ describe('Barcode Agent',
                     }
                 };
 
+                mockRenderer = {
+                    render: jasmine.createSpy('renderer')
+                };
+
                 beforeEach(function() {
-                    pageView = new app.PageView(nullLogger,mockDocument);
+                    pageView = new app.PageView(nullLogger,
+                                                mockDocument,
+                                                function() {
+                                                    return mockRenderer;
+                                                });
                     testPageDom = {
                         id: 'testpage',style: {}
                     };
@@ -179,6 +187,7 @@ describe('Barcode Agent',
                     onDisplay = jasmine.createSpy('ondisplay');
                     testPage = new app.Page(testPageDom.id,
                                             testPageDom,
+                                            null,
                                             onDisplay);
                     pageView.addPage(testPage);
 
@@ -186,6 +195,27 @@ describe('Barcode Agent',
 
                     expect(onDisplay).toHaveBeenCalledWith(context);
                 });
+
+                it('renders template with give data on page open',
+                    function() {
+                        var testPage, template, context;
+
+                        template = {
+                            b: 'b'
+                        };
+                        context = {
+                            a: 'a'
+                        };
+
+                        testPage = new app.Page(testPageDom.id,
+                                                testPageDom,
+                                                template);
+                        pageView.addPage(testPage);
+                        pageView.gotoPage(testPageDom.id,context);
+
+                        expect(mockRenderer.render)
+                                .toHaveBeenCalledWith(context,template);
+                    });
 
                 it('invokes onhide handler of the previous page on page open',
                     function() {
@@ -195,6 +225,7 @@ describe('Barcode Agent',
 
                         pageView.addPage(new app.Page(testPageDom.id,
                                                       testPageDom,
+                                                      null,
                                                       null,
                                                       onHide));
                         pageView.addPage(new app.Page(otherPageDom1.id,
@@ -272,6 +303,7 @@ describe('Barcode Agent',
 
                         pageView.addPage(new app.Page(testPageDom.id,
                                                       testPageDom,
+                                                      null,
                                                       onDisplay));
                         pageView.addPage(new app.Page(otherPageDom1.id,
                                                       otherPageDom1));
@@ -328,11 +360,14 @@ describe('Barcode Agent',
             };
 
             it('creates pages from document',function() {
-                var extractor, onDisplay, onHide, page;
+                var extractor, template, onDisplay, onHide, page;
 
                 extractor = new app.DocumentPageExtractor(nullLogger,
                                                           mockDocument);
 
+                template = {
+                    a: 'a'
+                };
                 onDisplay = function() {
                     return 1;
                 };
@@ -340,10 +375,14 @@ describe('Barcode Agent',
                     return 2;
                 };
 
-                page = extractor.extract(testPageDom.id,onDisplay,onHide);
+                page = extractor.extract(testPageDom.id,
+                    template,
+                    onDisplay,
+                    onHide);
 
                 // FIXME: More careful examination of call contents
                 expect(page.id).toEqual(testPageDom.id);
+                expect(page.template).toBe(template);
                 expect(page.onDisplay).toBe(onDisplay);
                 expect(page.onHide).toBe(onHide);
             });
