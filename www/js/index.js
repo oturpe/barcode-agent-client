@@ -10,7 +10,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, newProductInfo, toBarcodeURL, toQueryString, contentSelector, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submit, requestInfo, templates;
+    var Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, newProductInfo, newCommentInfo, toBarcodeURL, toQueryString, contentSelector, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment, templates;
 
     // Logger constructor
     //
@@ -227,6 +227,9 @@ var app = (function() {
     // Variable storing details about new product
     newProductInfo = null;
 
+    // Variable storing details about new comment
+    newCommentInfo = null;
+
     // Creates REST URL for given product ID
     toBarcodeURL = function(barcode) {
         return settings.getItem('serverUrl') + BARCODES_URL + '/' + barcode;
@@ -352,7 +355,25 @@ var app = (function() {
             });
 
             function onDisplay(context) {
-            // TODO: Functions for submit and cancel buttons.
+                var textElement, cancelElement, submitElement;
+
+                newCommentInfo = {};
+
+                textElement = this.domPage.querySelector('#commentaddtext');
+                textElement.addEventListener('change',function() {
+                    newCommentInfo.text = this.value;
+                });
+
+                submitElement = this.domPage.querySelector('#commentaddsubmit');
+                submitElement.addEventListener('click',function() {
+                    // TODO: Parameters?
+                    submitComment(newCommentInfo.txt,settings.username);
+                },false);
+
+                cancelElement = this.domPage.querySelector('#commentaddcancel');
+                cancelElement.addEventListener('click',function() {
+                    pageView.gotoPreviousPage();
+                },false);
             }
 
             pageView.addPage(pageExtractor.extract('commentadd',
@@ -548,9 +569,9 @@ var app = (function() {
     };
 
     // Submits new product to server.
-    submit = function(barcode,productName,user) {
+    submitProduct = function(barcode,productName,user) {
 
-        logger.log('At submit method');
+        logger.log('At submitProduct method');
         logger.log('barcode: ' + barcode);
         logger.log('name: ' + productName);
         logger.log('user: ' + user);
@@ -584,6 +605,43 @@ var app = (function() {
 
             logger.notify(Logger.DELAY,'Submitting product...');
             request.send(toQueryString(productInfo));
+        } catch(ex) {
+            logger.notify(Logger.ERROR,'Internal error: ' + ex.message);
+        }
+    };
+
+    submitComment = function() {
+        // TODO: ???
+        logger.log('At submitComment method');
+
+        var request, response, commentInfo, message;
+
+        try {
+            request = new XMLHttpRequest();
+            request.open('POST',
+            // TODO: Correct path for adding a comment
+            settings.getItem('serverUrl') + PRODUCTS_URL,true);
+
+            request.onreadystatechange = function() {
+                if(request.readyState !== this.DONE) {
+                    return;
+                }
+
+                if(request.status === 201) {
+                    logger.notify(Logger.INFO,'Product submitted');
+                } else {
+                    message = 'Internal error: Unexpected status code ' +
+                              request.status;
+                    logger.notify(Logger.ERROR,message);
+                }
+            };
+
+            commentInfo = {
+            // TODO: ???
+            };
+
+            logger.notify(Logger.DELAY,'Submitting comment...');
+            request.send(toQueryString(commentInfo));
         } catch(ex) {
             logger.notify(Logger.ERROR,'Internal error: ' + ex.message);
         }
