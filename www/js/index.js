@@ -146,8 +146,8 @@ var app = (function() {
             }
 
             if(newPage.template) {
-                this.renderer(contentSelector(newPage.id))
-                        .render(context,newPage.template);
+                this.renderer(contentSelector(newPage.id)).render(context,
+                    newPage.template);
             }
             newPage.onDisplay(context);
 
@@ -340,8 +340,8 @@ var app = (function() {
             }
 
             pageView.addPage(pageExtractor.extract('productview',
-                                                   template,
-                                                   onDisplay));
+                template,
+                onDisplay));
         }());
 
         (function() {
@@ -356,8 +356,8 @@ var app = (function() {
             }
 
             pageView.addPage(pageExtractor.extract('commentadd',
-                                                   template,
-                                                   onDisplay));
+                template,
+                onDisplay));
         }());
 
         (function() {
@@ -384,15 +384,15 @@ var app = (function() {
                 // not to be edited by user.
 
                 submitElement.addEventListener('click',function() {
-                    submit(newProductInfo.barcode,
-                           newProductInfo.name,
-                           settings.getInfo('username'));
+                    submitProduct(newProductInfo.barcode,
+                        newProductInfo.name,
+                        settings.getInfo('username'));
                 },false);
             }
 
             pageView.addPage(pageExtractor.extract('productnew',
-                                                   template,
-                                                   onDisplay));
+                template,
+                onDisplay));
         }());
 
         (function() {
@@ -401,21 +401,20 @@ var app = (function() {
             var template, settingsButton;
 
             template = $p(contentSelector('settings')).compile({
-                '#username@value': 'username',
-                '#serverurl@value': 'url'
+                '#username@value': 'username','#serverurl@value': 'url'
             });
 
             settingsButton = document.querySelector('#settingsbutton');
 
             function onDisplay(context) {
-                var usernameInput,serverUrlInput;
+                var usernameInput, serverUrlInput;
 
                 usernameInput = this.domPage.querySelector('#username');
                 usernameInput.addEventListener('change',function() {
                     logger.log('Setting username to "' + this.value + '"');
                     settings.setItem('username',this.value);
                 },false);
-            
+
                 serverUrlInput = this.domPage.querySelector('#serverurl');
                 serverUrlInput.addEventListener('change',function() {
                     logger.log('Setting server URL to "' + this.value + '"');
@@ -431,9 +430,9 @@ var app = (function() {
             }
 
             pageView.addPage(pageExtractor.extract('settings',
-                                                   template,
-                                                   onDisplay,
-                                                   onHide));
+                template,
+                onDisplay,
+                onHide));
         }());
 
         pageView.gotoPage('intro');
@@ -561,8 +560,8 @@ var app = (function() {
         try {
             request = new XMLHttpRequest();
             request.open('POST',
-                         settings.getItem('serverUrl') + PRODUCTS_URL,
-                         true);
+                settings.getItem('serverUrl') + PRODUCTS_URL,
+                true);
 
             request.onreadystatechange = function() {
                 if(request.readyState !== this.DONE) {
