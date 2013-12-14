@@ -127,26 +127,6 @@ describe('Barcode Agent',
                 });
         });
 
-        describe('createPage',function() {
-            var document, domPage;
-
-            domPage = {
-                id: 'pageId'
-            };
-
-            document = {
-                querySelector: function(string) {
-                    switch(string) {
-                    case '#pageId':
-                        return domPage;
-                    default:
-                        return undefined;
-                    }
-                }
-            };
-
-        });
-
         describe('PageView',
             function() {
 
