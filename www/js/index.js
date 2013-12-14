@@ -125,7 +125,7 @@ var app = (function() {
         // 3. Calling on-display and on-hide handlers of the pages.
         // 4. Updating current and previous page member variables.
         //
-        // Page to be openred is referred to by its id.
+        // Page to be opened is referred to by its id.
         gotoPage: function(newPageId,context) {
             var newPage;
 
@@ -260,7 +260,8 @@ var app = (function() {
         var notifier, statusTextElement, settingsButton;
 
         defaultSettings = {
-            'serverUrl': 'http://barcodeagent.nodejitsu.com'
+            'serverUrl': 'http://barcodeagent.nodejitsu.com',
+            'username': 'Anonymous User'
         };
 
         statusTextElement = document.getElementById('statustext');
@@ -385,7 +386,7 @@ var app = (function() {
                 submitElement.addEventListener('click',function() {
                     submit(newProductInfo.barcode,
                            newProductInfo.name,
-                           newProductInfo.user);
+                           settings.getInfo('username'));
                 },false);
             }
 
@@ -400,15 +401,22 @@ var app = (function() {
             var template, settingsButton;
 
             template = $p(contentSelector('settings')).compile({
+                '#username@value': 'username',
                 '#serverurl@value': 'url'
             });
 
             settingsButton = document.querySelector('#settingsbutton');
 
             function onDisplay(context) {
-                var serverUrlInput;
+                var usernameInput,serverUrlInput;
 
-                serverUrlInput = document.getElementById('serverurl');
+                usernameInput = this.domPage.querySelector('#username');
+                usernameInput.addEventListener('change',function() {
+                    logger.log('Setting username to "' + this.value + '"');
+                    settings.setItem('username',this.value);
+                },false);
+            
+                serverUrlInput = this.domPage.querySelector('#serverurl');
                 serverUrlInput.addEventListener('change',function() {
                     logger.log('Setting server URL to "' + this.value + '"');
                     settings.setItem('serverUrl',this.value);
@@ -445,6 +453,7 @@ var app = (function() {
                 pageView.gotoPreviousPage();
             } else {
                 context = {
+                    'username': settings.getItem('username'),
                     'url': settings.getItem('serverUrl')
                 };
                 pageView.gotoPage('settings',context);
