@@ -1,4 +1,4 @@
-/*global window, document, XMLHttpRequest, $p */
+/*global window, document, XMLHttpRequest, $p, pure */
 
 var scanner, logger, settings, app;
 
@@ -93,11 +93,9 @@ var app = (function() {
     // Contains all pages within one virtual page and allows switching between
     // them.
     //
-    // Input is logger for logging, dom document that contains the pages to be
-    // registered and PURE.js renderer for page templates.
-    PageView = function(logger,document,renderer) {
+    // Input is logger for logging and PURE.js renderer for page templates.
+    PageView = function(logger,renderer) {
         this.logger = logger;
-        this.document = document;
         this.renderer = renderer;
 
         this.pages = {};
@@ -298,7 +296,7 @@ var app = (function() {
 
         logger = new Logger('BarcodeAgent',window.console,notifier);
         settings = new Settings(logger,window.localStorage,defaultSettings);
-        pageView = new PageView(logger,document,$p);
+        pageView = new PageView(logger,pure);
         pageExtractor = new DocumentPageExtractor(logger,document);
 
         bindEvents();

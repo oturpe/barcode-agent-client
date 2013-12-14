@@ -130,24 +130,10 @@ describe('Barcode Agent',
         describe('PageView',
             function() {
 
-                var nullLogger, mockDocument, mockRenderer, pageView, testPageDom, otherPageDom1, otherPageDom2;
+                var nullLogger, mockRenderer, pageView, testPageDom, otherPageDom1, otherPageDom2;
 
                 nullLogger = {
                     log: function() {}
-                };
-
-                // Mock for html document and pages contained within.
-                mockDocument = {
-                    querySelector: function(pageSelector) {
-                        switch(pageSelector) {
-                        case '#testpage':
-                            return testPageDom;
-                        case '#otherpage-1':
-                            return otherPageDom1;
-                        case '#otherpage-2':
-                            return otherPageDom2;
-                        }
-                    }
                 };
 
                 mockRenderer = {
@@ -155,11 +141,9 @@ describe('Barcode Agent',
                 };
 
                 beforeEach(function() {
-                    pageView = new app.PageView(nullLogger,
-                                                mockDocument,
-                                                function() {
-                                                    return mockRenderer;
-                                                });
+                    function mockPure() {return mockRenderer;};
+                    
+                    pageView = new app.PageView(nullLogger,mockPure);
                     testPageDom = {
                         id: 'testpage',style: {}
                     };
