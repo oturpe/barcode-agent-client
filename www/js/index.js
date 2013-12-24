@@ -10,7 +10,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, newProductInfo, newCommentInfo, toBarcodeURL, toQueryString, contentSelector, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment, templates;
+    var Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, newProductInfo, newCommentInfo, toBarcodeUrl, toQueryString, contentSelector, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment, templates;
 
     // Logger constructor
     //
@@ -230,8 +230,8 @@ var app = (function() {
     // Variable storing details about new comment
     newCommentInfo = null;
 
-    // Creates REST URL for given product ID
-    toBarcodeURL = function(barcode) {
+    // Creates REST url for given barcode
+    toBarcodeUrl = function(barcode) {
         return settings.getItem('serverUrl') + BARCODES_URL + '/' + barcode;
     };
 
@@ -525,7 +525,7 @@ var app = (function() {
             return;
         }
 
-        url = toBarcodeURL(barcode);
+        url = toBarcodeUrl(barcode);
         logger.log('Requesting info from ' + url);
 
         try {
