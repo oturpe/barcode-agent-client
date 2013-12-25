@@ -10,7 +10,7 @@ var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 var app = (function() {
     'use strict';
 
-    var Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, newProductInfo, newCommentInfo, toBarcodeUrl, toQueryString, contentSelector, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment, templates;
+    var Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, COMMENTS_URL_COMPONENT, newProductInfo, newCommentInfo, toBarcodeUrl, toCommentsUrl, toQueryString, contentSelector, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment, templates;
 
     // Logger constructor
     //
@@ -223,6 +223,7 @@ var app = (function() {
     // Server URL components
     BARCODES_URL = '/barcodes.cgi';
     PRODUCTS_URL = '/products.cgi';
+    COMMENTS_URL_COMPONENT = 'comments';
 
     // Variable storing details about new product
     newProductInfo = null;
@@ -235,7 +236,18 @@ var app = (function() {
         return settings.getItem('serverUrl') + BARCODES_URL + '/' + barcode;
     };
 
-    // Creates URL-encoded string from given object, suitable for http
+    // Creates REST url for comments of given product
+    toCommentsUrl = function(productId) {
+
+        return settings.getItem('serverUrl') +
+               PRODUCTS_URL +
+               '/' +
+               productId +
+               '/' +
+               COMMENTS_URL_COMPONENT;
+    };
+
+    // Creates url-encoded string from given object, suitable for http
     // get and post queries.
     toQueryString = function(obj) {
         var query = '', key, keys = Object.keys(obj), length = keys.length, i;
@@ -327,18 +339,26 @@ var app = (function() {
             });
 
             function onDisplay(context) {
-                var product, addCommentElement;
+                var addCommentElement;
 
                 addCommentElement = this.domPage
                         .querySelector('#productcommentadd');
 
                 addCommentElement.addEventListener('click',function() {
-                    var context;
+                    var commentContext;
 
-                    context = {
-                        productName: product.name
+                    newCommentInfo = {
+                        productId: context.id,
+                        username: settings.getItem('username')
                     };
-                    pageView.gotoPage('commentadd',context);
+
+                    commentContext = {
+                        product: {
+                            name: context.name
+                        },username: settings.getItem('username')
+                    };
+
+                    pageView.gotoPage('commentadd',commentContext);
                 },false);
             }
 
@@ -351,13 +371,16 @@ var app = (function() {
             var template;
 
             template = $p(contentSelector('commentadd')).compile({
-                '#commentaddproduct': 'productName'
+                '#commentaddproduct': 'product.name',
+                '#commentadduser': 'username'
             });
 
+            // Context:
+            // -product: product whose comment we are about to add
+            // --name: product name
+            // -username: Username to be submitted as commenter
             function onDisplay(context) {
                 var textElement, cancelElement, submitElement;
-
-                newCommentInfo = {};
 
                 textElement = this.domPage.querySelector('#commentaddtext');
                 textElement.addEventListener('change',function() {
@@ -367,7 +390,9 @@ var app = (function() {
                 submitElement = this.domPage.querySelector('#commentaddsubmit');
                 submitElement.addEventListener('click',function() {
                     // TODO: Parameters?
-                    submitComment(newCommentInfo.txt,settings.username);
+                    submitComment(newCommentInfo.productId,
+                        newCommentInfo.text,
+                        context.username);
                 },false);
 
                 cancelElement = this.domPage.querySelector('#commentaddcancel');
@@ -407,7 +432,7 @@ var app = (function() {
                 submitElement.addEventListener('click',function() {
                     submitProduct(newProductInfo.barcode,
                         newProductInfo.name,
-                        settings.getInfo('username'));
+                        settings.getItem('username'));
                 },false);
             }
 
@@ -610,17 +635,21 @@ var app = (function() {
         }
     };
 
-    submitComment = function() {
-        // TODO: ???
+    // Sends comment on given product to server using given username. Url to
+    // use is specified in method toCommentsUrl. After successful submittal,
+    // goes to 'productview' page again. Note that this includes retrieving
+    // product info again. If submittal fails, notification is sent and page
+    // is not changed.
+    submitComment = function(product,comment,username) {
         logger.log('At submitComment method');
 
-        var request, response, commentInfo, message;
+        var url, request, response, commentInfo, message;
+
+        url = toCommentsUrl(product.id);
 
         try {
             request = new XMLHttpRequest();
-            request.open('POST',
-            // TODO: Correct path for adding a comment
-            settings.getItem('serverUrl') + PRODUCTS_URL,true);
+            request.open('POST',url,true);
 
             request.onreadystatechange = function() {
                 if(request.readyState !== this.DONE) {
@@ -628,7 +657,8 @@ var app = (function() {
                 }
 
                 if(request.status === 201) {
-                    logger.notify(Logger.INFO,'Product submitted');
+                    logger.notify(Logger.INFO,'Comment submitted');
+                    // TODO: Retrieve new product page after submit
                 } else {
                     message = 'Internal error: Unexpected status code ' +
                               request.status;
@@ -637,7 +667,7 @@ var app = (function() {
             };
 
             commentInfo = {
-            // TODO: ???
+                by: username,comment: comment
             };
 
             logger.notify(Logger.DELAY,'Submitting comment...');
