@@ -338,6 +338,9 @@ var app = (function() {
                 }
             });
 
+            // Context:
+            // -id: product id
+            // -name: product name
             function onDisplay(context) {
                 var addCommentElement;
 
@@ -378,7 +381,7 @@ var app = (function() {
             // Context:
             // -product: product whose comment we are about to add
             // --name: product name
-            // -username: Username to be submitted as commenter
+            // -username: User name to be submitted as commenter
             function onDisplay(context) {
                 var textElement, cancelElement, submitElement;
 
@@ -389,7 +392,6 @@ var app = (function() {
 
                 submitElement = this.domPage.querySelector('#commentaddsubmit');
                 submitElement.addEventListener('click',function() {
-                    // TODO: Parameters?
                     submitComment(newCommentInfo.productId,
                         newCommentInfo.text,
                         context.username);
@@ -414,6 +416,9 @@ var app = (function() {
                 '#productnewname@value': 'name'
             });
 
+            // Context:
+            // -barcode: barcode of new product
+            // -name: name of new product
             function onDisplay(context) {
                 var nameElement, submitElement;
 
