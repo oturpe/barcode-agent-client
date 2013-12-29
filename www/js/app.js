@@ -1,4 +1,4 @@
-/*global window, document, XMLHttpRequest, $p, pure, requirejs*/ 
+/*global window, document, XMLHttpRequest*/ 
 
 // Barcode Agent application module
 //
@@ -12,13 +12,9 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
     function(cordova,pure,pages,logging,Settings) {
         'use strict';
 
-        var scanner, logger, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, COMMENTS_URL_COMPONENT, newProductInfo, newCommentInfo, toBarcodeUrl, toCommentsUrl, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment, templates;
+        var scanner, logger, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, COMMENTS_URL_COMPONENT, newProductInfo, newCommentInfo, toBarcodeUrl, toCommentsUrl, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment;
 
         scanner = cordova.require('cordova/plugin/BarcodeScanner');
-
-        // Collection of compiled PURE.js templates, one for each page
-        // TODO: Put templates inside Page objects
-        templates = {};
 
         // Server URL components
         BARCODES_URL = '/barcodes.cgi';
@@ -78,7 +74,7 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
             statusTextElement = document.getElementById('statustext');
             // Wraps Cordova notification plugin so that logger can be
             // initialized
-            // now without worrying if navigatotr.notification exists yet.
+            // now without worrying if navigator.notification exists yet.
             notifier = {
                 // Notifies user by showing message in status bar. Different
                 // notification types and represented by different background
@@ -116,15 +112,17 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
 
             // *** Sequence of IIFE's, each registering a single page. ***
 
+            // Introductory page
             (function() {
                 pageView.addPage(pageExtractor.extract('intro'));
             }());
 
+            // Page for viewing a product
             (function() {
                 var template;
 
                 // TODO: Handle a list of products
-                template = $p(pages.contentSelector('productview')).compile({
+                template = pure(pages.contentSelector('productview')).compile({
                     '#productname': 'name',
                     '.productcomment': {
                         'comment<-comments': {
@@ -167,10 +165,11 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
                     onDisplay));
             }());
 
+            // Page for adding a comment for product
             (function() {
                 var template;
 
-                template = $p(pages.contentSelector('commentadd')).compile({
+                template = pure(pages.contentSelector('commentadd')).compile({
                     '#commentaddproduct': 'product.name',
                     '#commentadduser': 'username'
                 });
@@ -207,10 +206,11 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
                     onDisplay));
             }());
 
+            // Page for adding new product
             (function() {
                 var template;
 
-                template = $p(pages.contentSelector('productnew')).compile({
+                template = pure(pages.contentSelector('productnew')).compile({
                     '#productnewbarcode@value': 'barcode',
                     '#productnewname@value': 'name'
                 });
@@ -252,7 +252,7 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
                 // implemented some kind of modal dialog.
                 var template, settingsButton;
 
-                template = $p(pages.contentSelector('settings')).compile({
+                template = pure(pages.contentSelector('settings')).compile({
                     '#username@value': 'username','#serverurl@value': 'url'
                 });
 
@@ -347,7 +347,7 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
             }
         };
 
-        // Retrieves barcode information for the server. If matching product is
+        // Retrieves barcode information from the server. If matching product is
         // found, takes app to view for that product. If no products are found,
         // instructs the user to add it to database.
         requestInfo = function(barcode) {
