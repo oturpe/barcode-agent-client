@@ -2,235 +2,19 @@
 
 // Barcode Agent application module
 //
-// Contains and exposes all components of the application.
+// Currently in flux of being decomposed to various AMD modules.
 //
 // Note: barcodescanner is a Cordova plugin, thus it is only shimmed as a script
 // to execute in Require and does not return a sensible object for Require. It
 // is assigned to a variable right in the beginning of this module using the
 // Cordova module system.
-define(['cordova','js/lib/pure','barcodescanner'],
-    function(cordova,pure) {
+define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodescanner'],
+    function(cordova,pure,pages,logging,Settings) {
         'use strict';
 
-        var scanner, Logger, Settings, Page, DocumentPageExtractor, PageView, logger, defaultSettings, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, COMMENTS_URL_COMPONENT, newProductInfo, newCommentInfo, toBarcodeUrl, toCommentsUrl, toQueryString, contentSelector, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment, templates;
+        var scanner, logger, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, COMMENTS_URL_COMPONENT, newProductInfo, newCommentInfo, toBarcodeUrl, toCommentsUrl, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment, templates;
 
         scanner = cordova.require('cordova/plugin/BarcodeScanner');
-
-        // Logger constructor
-        //
-        // Component for logging and notification.
-        Logger = function(prefix,baseLogger,notifier) {
-            this.prefix = prefix || '';
-            this.baseLogger = baseLogger;
-            this.notifier = notifier;
-
-            return this;
-        };
-
-        // Notification types: information, error condition, operation underway
-        Logger.INFO = 'INFO';
-        Logger.ERROR = 'ERROR';
-        Logger.DELAY = 'DELAY';
-
-        Logger.prototype = {
-            // Silently logs given message
-            log: function(message) {
-                this.baseLogger.log(this.prefix + ' ' + message);
-            },
-            // Logs given notification and displays it to the user
-            notify: function(type,message) {
-                this.log('[' + type + '] ' + message);
-                this.notifier.notify(type,message);
-            }
-        };
-
-        // Application settings constructor.
-        //
-        // Thin wrapper around localStorage, providing defaults for missing
-        // values.
-        //
-        // Depends on a logger.
-        Settings = function(logger,storage,defaults) {
-            this.logger = logger;
-            this.storage = storage;
-            // Default values for item missing from store.
-            this.defaults = defaults || {};
-
-            return this;
-        };
-
-        Settings.prototype = {
-            // Stores value
-            setItem: function(key,value) {
-                this.storage.setItem(key,value);
-            },
-            // Returns stored value of given key, or default value if none
-            // exists.
-            getItem: function(key) {
-                var value;
-
-                value = this.storage.getItem(key);
-                this.logger.log('Accessing storage: ' + key + ': ' + value);
-
-                return value ? value : this.defaults[key];
-            }
-        };
-
-        // A single page of the application.
-        //
-        // Contains page id, dom page reference, html template and on-display
-        // and
-        // on-hide handlers.
-        //
-        // Default for both handlers is no-op. Falsy template indicates that no
-        // template rendering is to be performed.
-
-        // TODO: add onDisplay,onHide and template using a method.
-        Page = function(id,domPage,template,onDisplay,onHide) {
-            this.id = id;
-
-            // FIXME: domPage is mandatory. What to do if it is missing?
-
-            this.domPage = domPage;
-            this.template = template;
-            this.onDisplay = onDisplay || function() {};
-            this.onHide = onHide || function() {};
-        };
-
-        // Contains all pages within one virtual page and allows switching
-        // between
-        // them.
-        //
-        // Input is logger for logging and PURE.js renderer for page templates.
-        PageView = function(logger,renderer) {
-            this.logger = logger;
-            this.renderer = renderer;
-
-            this.pages = {};
-
-            this.currentPage = undefined;
-            this.previousPage = undefined;
-        };
-
-        PageView.prototype = {
-            // Adds page to the list of registered pages and associates given
-            // on-display and on-hide handlers with it.
-            //
-            // Assumes responsibility for viewing and hiding the page, hiding it
-            // initially. To show the page, see method gotoPage.
-            addPage: function(page) {
-                this.logger.log('Added page ' + page.id + ' to page list');
-                this.pages[page.id] = page;
-            },
-
-            // Switches virtual page within the single page model. Context
-            // parameter
-            // is a JS object containing page-specific initialization data.
-
-            // The specific actions performed by this method are:
-            // 1. Adjusting display values of page elements so that only the new
-            // page remains visible.
-            // 2. Rendering new page's content from page template.
-            // 3. Calling on-display and on-hide handlers of the pages.
-            // 4. Updating current and previous page member variables.
-            //
-            // Page to be opened is referred to by its id.
-            gotoPage: function(newPageId,context) {
-                var newPage;
-
-                newPage = this.pages[newPageId];
-
-                if(newPage === undefined) {
-                    this.logger.log('ERROR: ' +
-                                    'Cannot open page with unknown page id: ' +
-                                    newPageId);
-                    return;
-                }
-
-                this.logger.log('Opening page with id ' + newPageId);
-
-                // No current page when the first page is opened
-                if(this.currentPage) {
-                    this.currentPage.onHide(this.currentPage.id);
-                }
-
-                if(newPage.template) {
-                    this.renderer(contentSelector(newPage.id)).render(context,
-                        newPage.template);
-                }
-                newPage.onDisplay(context);
-
-                this.changeDisplay(this.currentPage,newPage);
-
-                this.previousPage = this.currentPage;
-                this.currentPage = newPage;
-            },
-
-            // Displays the page that was visible before current page. This
-            // method
-            // functions like gotoPage. Note that it is not possible to go to
-            // previous page again from the opened page. Essentially, the
-            // history is
-            // one page long and this method does not update it.
-            //
-            // Note that on-hide handler of hidden page is called, but
-            // on-display
-            // of opened (previous) page is not called, nor is it templated as
-            // it
-            // is expected that the page is still in the state where it was when
-            // it
-            // was closed.
-            gotoPreviousPage: function() {
-                var pages;
-
-                this.logger.log('Going back to page with id ' +
-                                this.previousPage.id);
-
-                this.currentPage.onHide(this.currentPage.id);
-
-                this.changeDisplay(this.currentPage,this.previousPage);
-
-                this.currentPage = this.previousPage;
-                this.previousPage = null;
-            },
-
-            // Utility for changing display values of both current and new page.
-            changeDisplay: function(currentPage,newPage) {
-                if(currentPage) {
-                    currentPage.domPage.style.display = 'none';
-                }
-
-                newPage.domPage.style.display = 'block';
-            }
-        };
-
-        // Extracts pages from dom tree
-        DocumentPageExtractor = function(logger,document) {
-            this.logger = logger;
-            this.document = document;
-        };
-
-        DocumentPageExtractor.prototype = {
-            // Given id, extracts that page from document and returns a Page
-            // object
-            // that has given on-display and on-hide handlers registered. If
-            // page
-            // is not found in document, logs a warning and returns null.
-            extract: function(id,template,onDisplay,onHide) {
-                var domPage;
-
-                domPage = this.document.querySelector('#' + id);
-
-                if(!domPage) {
-                    this.logger.log('Did not find page with id ' +
-                                    id +
-                                    ' in document.');
-                    return null;
-                }
-
-                return new Page(id,domPage,template,onDisplay,onHide);
-            }
-        };
 
         // Collection of compiled PURE.js templates, one for each page
         // TODO: Put templates inside Page objects
@@ -282,14 +66,9 @@ define(['cordova','js/lib/pure','barcodescanner'],
             return query;
         };
 
-        // Create selector for choosing page content dom element
-        contentSelector = function(pageId) {
-            return '#' + pageId + 'content';
-        };
-
         // Application Constructor
         initialize = function() {
-            var notifier, statusTextElement, settingsButton;
+            var defaultSettings, notifier, statusTextElement, settingsButton;
 
             defaultSettings = {
                 'serverUrl': 'http://barcodeagent.nodejitsu.com',
@@ -307,13 +86,13 @@ define(['cordova','js/lib/pure','barcodescanner'],
                 notify: function(type,message) {
                     var color;
                     switch(type) {
-                    case Logger.INFO:
+                    case logging.status.INFO:
                         color = '#4B946A';
                         break;
-                    case Logger.DELAY:
+                    case logging.status.DELAY:
                         color = '#333333';
                         break;
-                    case Logger.ERROR:
+                    case logging.status.ERROR:
                         color = '#C90C22';
                         break;
                     default:
@@ -328,10 +107,10 @@ define(['cordova','js/lib/pure','barcodescanner'],
                 }
             };
 
-            logger = new Logger('BarcodeAgent',window.console,notifier);
+            logger = new logging.Logger('BarcodeAgent',window.console,notifier);
             settings = new Settings(logger,window.localStorage,defaultSettings);
-            pageView = new PageView(logger,pure);
-            pageExtractor = new DocumentPageExtractor(logger,document);
+            pageView = new pages.PageView(logger,pure);
+            pageExtractor = new pages.DocumentPageExtractor(logger,document);
 
             bindEvents();
 
@@ -345,7 +124,7 @@ define(['cordova','js/lib/pure','barcodescanner'],
                 var template;
 
                 // TODO: Handle a list of products
-                template = $p(contentSelector('productview')).compile({
+                template = $p(pages.contentSelector('productview')).compile({
                     '#productname': 'name',
                     '.productcomment': {
                         'comment<-comments': {
@@ -391,7 +170,7 @@ define(['cordova','js/lib/pure','barcodescanner'],
             (function() {
                 var template;
 
-                template = $p(contentSelector('commentadd')).compile({
+                template = $p(pages.contentSelector('commentadd')).compile({
                     '#commentaddproduct': 'product.name',
                     '#commentadduser': 'username'
                 });
@@ -431,7 +210,7 @@ define(['cordova','js/lib/pure','barcodescanner'],
             (function() {
                 var template;
 
-                template = $p(contentSelector('productnew')).compile({
+                template = $p(pages.contentSelector('productnew')).compile({
                     '#productnewbarcode@value': 'barcode',
                     '#productnewname@value': 'name'
                 });
@@ -473,7 +252,7 @@ define(['cordova','js/lib/pure','barcodescanner'],
                 // implemented some kind of modal dialog.
                 var template, settingsButton;
 
-                template = $p(contentSelector('settings')).compile({
+                template = $p(pages.contentSelector('settings')).compile({
                     '#username@value': 'username','#serverurl@value': 'url'
                 });
 
@@ -519,7 +298,7 @@ define(['cordova','js/lib/pure','barcodescanner'],
             var scanButton, settingsButton, context;
 
             document.addEventListener('deviceready',function() {
-                logger.notify(Logger.INFO,'Device is Ready');
+                logger.notify(logging.status.INFO,'Device is Ready');
             },false);
 
             settingsButton = document.getElementById('settingsbutton');
@@ -547,7 +326,7 @@ define(['cordova','js/lib/pure','barcodescanner'],
             try {
                 scanner.scan(function(result) {
                     if(result.cancelled) {
-                        logger.notify(Logger.INFO,'Scan cancelled');
+                        logger.notify(logging.status.INFO,'Scan cancelled');
                         return;
                     }
 
@@ -561,10 +340,10 @@ define(['cordova','js/lib/pure','barcodescanner'],
 
                     requestInfo(result.text);
                 },function(error) {
-                    logger.notify(Logger.ERROR,'Scanning failed: ' + error);
+                    logger.notify(logging.status.ERROR,'Scanning failed: ' + error);
                 });
             } catch(ex) {
-                logger.notify(Logger.ERROR,'Internal error: ' + ex.message);
+                logger.notify(logging.status.ERROR,'Internal error: ' + ex.message);
             }
         };
 
@@ -576,7 +355,7 @@ define(['cordova','js/lib/pure','barcodescanner'],
 
             if(!barcode) {
                 message = 'Interal error: Called "requestInfo" without barcode';
-                logger.notify(Logger.ERROR,message);
+                logger.notify(logging.status.ERROR,message);
                 return;
             }
 
@@ -593,14 +372,14 @@ define(['cordova','js/lib/pure','barcodescanner'],
                     }
 
                     if(request.status === 200) {
-                        logger.notify(Logger.INFO,'Product found');
+                        logger.notify(logging.status.INFO,'Product found');
 
                         response = JSON.parse(request.responseText);
                         // TODO: Pass the whole list as soon as productview
                         // template supports a list.
                         pageView.gotoPage('productview',response.products[0]);
                     } else if(request.status === 404) {
-                        logger.notify(Logger.INFO,'No data available');
+                        logger.notify(logging.status.INFO,'No data available');
 
                         newProductInfo = {
                             barcode: barcode
@@ -608,18 +387,18 @@ define(['cordova','js/lib/pure','barcodescanner'],
 
                         pageView.gotoPage('productnew',newProductInfo);
                     } else if(request.status === 0) {
-                        logger.notify(Logger.ERROR,'Could not reach server');
+                        logger.notify(logging.status.ERROR,'Could not reach server');
                     } else {
                         message = 'Internal error: Unexpected status code ' +
                                   request.status;
-                        logger.notify(Logger.ERROR,message);
+                        logger.notify(logging.status.ERROR,message);
                     }
                 };
 
-                logger.notify(Logger.DELAY,'Requesting info...');
+                logger.notify(logging.status.DELAY,'Requesting info...');
                 request.send(null);
             } catch(ex) {
-                logger.notify(Logger.ERROR,'Internal error: ' + ex.message);
+                logger.notify(logging.status.ERROR,'Internal error: ' + ex.message);
             }
         };
 
@@ -644,11 +423,11 @@ define(['cordova','js/lib/pure','barcodescanner'],
                     }
 
                     if(request.status === 201) {
-                        logger.notify(Logger.INFO,'Product submitted');
+                        logger.notify(logging.status.INFO,'Product submitted');
                     } else {
                         message = 'Internal error: Unexpected status code ' +
                                   request.status;
-                        logger.notify(Logger.ERROR,message);
+                        logger.notify(logging.status.ERROR,message);
                     }
                 };
 
@@ -657,10 +436,10 @@ define(['cordova','js/lib/pure','barcodescanner'],
                 };
                 // TODO: Image
 
-                logger.notify(Logger.DELAY,'Submitting product...');
+                logger.notify(logging.status.DELAY,'Submitting product...');
                 request.send(toQueryString(productInfo));
             } catch(ex) {
-                logger.notify(Logger.ERROR,'Internal error: ' + ex.message);
+                logger.notify(logging.status.ERROR,'Internal error: ' + ex.message);
             }
         };
 
@@ -686,12 +465,12 @@ define(['cordova','js/lib/pure','barcodescanner'],
                     }
 
                     if(request.status === 201) {
-                        logger.notify(Logger.INFO,'Comment submitted');
+                        logger.notify(logging.status.INFO,'Comment submitted');
                         // TODO: Retrieve new product page after submit
                     } else {
                         message = 'Internal error: Unexpected status code ' +
                                   request.status;
-                        logger.notify(Logger.ERROR,message);
+                        logger.notify(logging.status.ERROR,message);
                     }
                 };
 
@@ -699,20 +478,15 @@ define(['cordova','js/lib/pure','barcodescanner'],
                     by: username,comment: comment
                 };
 
-                logger.notify(Logger.DELAY,'Submitting comment...');
+                logger.notify(logging.status.DELAY,'Submitting comment...');
                 request.send(toQueryString(commentInfo));
             } catch(ex) {
-                logger.notify(Logger.ERROR,'Internal error: ' + ex.message);
+                logger.notify(logging.status.ERROR,'Internal error: ' + ex.message);
             }
         };
 
         // Publish interface
         return {
-            Logger: Logger,
-            Settings: Settings,
-            Page: Page,
-            PageView: PageView,
-            DocumentPageExtractor: DocumentPageExtractor,
             initialize: initialize
         };
     });

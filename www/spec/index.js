@@ -1,5 +1,12 @@
 /*global require*/
 
+// Wrapper code for importing and setting up all testing libraries and calling
+// test code proper.
+//
+// Testing is performed using Jasmine unit test framework and its html reporter.
+// For mocking amd dependencies, Squire is used. This code has 'tests' module
+// as dependency, which in turn is responsible for either directly containing
+// or depending on code that has the actual Jasmine specs.
 require(['../js/lib/Squire','../js/require-config'],function(Squire) {
     'use strict';
 
