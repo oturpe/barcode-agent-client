@@ -18,49 +18,15 @@ define(['cordova',
     function(cordova,pure,pages,logging,Settings,ServerConnection) {
         'use strict';
 
-        var scanner, logger, settings, pageView, server, pageExtractor, PRODUCTS_URL, COMMENTS_URL_COMPONENT, newProductInfo, newCommentInfo, toCommentsUrl, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment;
+        var scanner, logger, settings, pageView, server, pageExtractor, newProductInfo, newCommentInfo, initialize, bindEvents, onDeviceReady, receivedEvent, scan, requestInfo;
 
         scanner = cordova.require('cordova/plugin/BarcodeScanner');
-
-        // Server URL components
-        PRODUCTS_URL = '/products.cgi';
-        COMMENTS_URL_COMPONENT = 'comments';
 
         // Variable storing details about new product
         newProductInfo = null;
 
         // Variable storing details about new comment
         newCommentInfo = null;
-
-        // Creates REST url for comments of given product
-        toCommentsUrl = function(productId) {
-
-            // return settings.getItem('serverUrl') +
-            // PRODUCTS_URL +
-            // '/' +
-            // productId +
-            // '/' +
-            // COMMENTS_URL_COMPONENT;
-            return settings.getItem('serverUrl') + '/comments.cgi';
-        };
-
-        // Creates url-encoded string from given object, suitable for http
-        // get and post queries.
-        toQueryString = function(obj) {
-            var query = '', key, keys = Object.keys(obj), length = keys.length, i;
-
-            for(i = 0; i < length; i += 1) {
-                key = keys[i];
-
-                if(i > 0) {
-                    query += '&';
-                }
-
-                query += key + '=' + encodeURIComponent(obj[key]);
-            }
-
-            return query;
-        };
 
         // Application Constructor
         initialize = function() {
@@ -190,7 +156,9 @@ define(['cordova',
                     submitElement = this.domPage
                             .querySelector('#commentaddsubmit');
                     submitElement.addEventListener('click',function() {
-                        submitComment(newCommentInfo.productId,
+                        // TODO: Add onSuccess callback to get back to product
+                        // page.
+                        server.submitComment(newCommentInfo.productId,
                             newCommentInfo.text,
                             context.username);
                     },false);
@@ -233,11 +201,11 @@ define(['cordova',
                     },false);
 
                     // Note: Barcode does not need change event listener as it
-                    // is
-                    // not to be edited by user.
+                    // is not to be edited by user.
 
                     submitElement.addEventListener('click',function() {
-                        submitProduct(newProductInfo.barcode,
+                        // TODO: Retrieve newly created product page afterwards
+                        server.submitProduct(newProductInfo.barcode,
                             newProductInfo.name,
                             settings.getItem('username'));
                     },false);
@@ -360,7 +328,7 @@ define(['cordova',
 
         // Request info on barcode and act on it. If products with given barcode
         // are found, display the first of them in 'productview' page. If no
-        // products are found, go to 'productnew' page to add one now.
+        // products are found, go to 'productnew' page to add one.
         requestInfo = function(barcode) {
             var onFound, onMissing;
 
@@ -378,97 +346,6 @@ define(['cordova',
             };
 
             server.requestInfo(barcode,onFound,onMissing);
-        };
-
-        // Submits new product to server.
-        submitProduct = function(barcode,productName,user) {
-
-            logger.log('At submitProduct method');
-            logger.log('barcode: ' + barcode);
-            logger.log('name: ' + productName);
-            logger.log('user: ' + user);
-
-            var request, response, productInfo, message;
-
-            try {
-                request = new XMLHttpRequest();
-                request.open('POST',settings.getItem('serverUrl') +
-                                    PRODUCTS_URL,true);
-
-                request.onreadystatechange = function() {
-                    if(request.readyState !== this.DONE) {
-                        return;
-                    }
-
-                    if(request.status === 201) {
-                        logger.notify(logging.statusCodes.INFO,
-                            'Product submitted');
-                    } else {
-                        message = 'Internal error: Unexpected status code ' +
-                                  request.status;
-                        logger.notify(logging.statusCodes.ERROR,message);
-                    }
-                };
-
-                productInfo = {
-                    barcode: barcode,name: productName
-                };
-                // TODO: Image
-
-                logger
-                        .notify(logging.statusCodes.DELAY,
-                            'Submitting product...');
-                request.send(toQueryString(productInfo));
-            } catch(ex) {
-                logger.notify(logging.statusCodes.ERROR,'Internal error: ' +
-                                                        ex.message);
-            }
-        };
-
-        // Sends comment on given product to server using given username. Url to
-        // use is specified in method toCommentsUrl. After successful submittal,
-        // goes to 'productview' page again. Note that this includes retrieving
-        // product info again. If submittal fails, notification is sent and page
-        // is not changed.
-        submitComment = function(product,comment,username) {
-            logger.log('At submitComment method');
-
-            var url, request, response, commentInfo, message;
-
-            url = toCommentsUrl(product.id);
-
-            try {
-                request = new XMLHttpRequest();
-                request.open('POST',url,true);
-
-                request.onreadystatechange = function() {
-                    if(request.readyState !== this.DONE) {
-                        return;
-                    }
-
-                    if(request.status === 201) {
-                        logger.notify(logging.statusCodes.INFO,
-                            'Comment submitted');
-                        // TODO: Retrieve new product page after submit
-                    } else {
-                        message = 'Internal error: Unexpected status code ' +
-                                  request.status;
-                        logger.notify(logging.statusCodes.ERROR,message);
-                    }
-                };
-
-                commentInfo = {
-                    by: username,comment: comment
-                };
-
-                logger
-                        .notify(logging.statusCodes.DELAY,
-                            'Submitting comment...');
-                request.send(toQueryString(commentInfo));
-            } catch(ex) {
-                logger.notify(logging.statusCodes.ERROR,'Internal error: ' +
-                                                        ex.message);
-            }
         };
 
         // Publish interface
