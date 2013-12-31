@@ -33,7 +33,7 @@ define(['js/logging','jasmine/jasmine'],function(logging) {
                     var logger, DELAY, expected;
 
                     logger = new logging.Logger('PREFIX',baseLogger,notifier);
-                    DELAY = logging.status.DELAY;
+                    DELAY = logging.statusCodes.DELAY;
 
                     spyOn(baseLogger,'log');
                     spyOn(notifier,'notify');
