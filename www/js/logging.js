@@ -7,22 +7,27 @@
 define([],function() {
     'use strict';
 
-    var exports;
+    var statusCodes, Logger;
 
-    exports = {};
+    // Notification types: information, error condition, operation underway
+    statusCodes = {
+        INFO: 'INFO',ERROR: 'ERROR',DELAY: 'DELAY'
+    };
 
     // Logger constructor
     //
     // Component for logging and notification.
-    exports.Logger = function(prefix,baseLogger,notifier) {
+    Logger = function(prefix,baseLogger,notifier) {
         this.prefix = prefix || '';
         this.baseLogger = baseLogger;
         this.notifier = notifier;
 
+        // Include status codes for easy reference in calling code
+        this.statusCodes = statusCodes;
         return this;
     };
 
-    exports.Logger.prototype = {
+    Logger.prototype = {
         // Silently logs given message
         log: function(message) {
             this.baseLogger.log(this.prefix + ' ' + message);
@@ -35,10 +40,5 @@ define([],function() {
         }
     };
 
-    // Notification types: information, error condition, operation underway
-    exports.status = {
-        INFO: 'INFO',ERROR: 'ERROR',DELAY: 'DELAY'
-    };
-
-    return exports;
+    return {Logger: Logger, statusCodes: statusCodes};
 });

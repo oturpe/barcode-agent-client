@@ -1,4 +1,4 @@
-/*global window, document, XMLHttpRequest*/ 
+/*global window, document, XMLHttpRequest*/
 
 // Barcode Agent application module
 //
@@ -8,16 +8,21 @@
 // to execute in Require and does not return a sensible object for Require. It
 // is assigned to a variable right in the beginning of this module using the
 // Cordova module system.
-define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodescanner'],
-    function(cordova,pure,pages,logging,Settings) {
+define(['cordova',
+        'js/lib/pure',
+        'js/pages',
+        'js/logging',
+        'js/settings',
+        'js/server-connection',
+        'barcodescanner'],
+    function(cordova,pure,pages,logging,Settings,ServerConnection) {
         'use strict';
 
-        var scanner, logger, settings, pageView, pageExtractor, BARCODES_URL, PRODUCTS_URL, COMMENTS_URL_COMPONENT, newProductInfo, newCommentInfo, toBarcodeUrl, toCommentsUrl, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment;
+        var scanner, logger, settings, pageView, server, pageExtractor, PRODUCTS_URL, COMMENTS_URL_COMPONENT, newProductInfo, newCommentInfo, toCommentsUrl, toQueryString, initialize, bindEvents, onDeviceReady, receivedEvent, scan, submitProduct, requestInfo, submitComment;
 
         scanner = cordova.require('cordova/plugin/BarcodeScanner');
 
         // Server URL components
-        BARCODES_URL = '/barcodes.cgi';
         PRODUCTS_URL = '/products.cgi';
         COMMENTS_URL_COMPONENT = 'comments';
 
@@ -26,11 +31,6 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
 
         // Variable storing details about new comment
         newCommentInfo = null;
-
-        // Creates REST url for given barcode
-        toBarcodeUrl = function(barcode) {
-            return settings.getItem('serverUrl') + BARCODES_URL + '/' + barcode;
-        };
 
         // Creates REST url for comments of given product
         toCommentsUrl = function(productId) {
@@ -82,13 +82,13 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
                 notify: function(type,message) {
                     var color;
                     switch(type) {
-                    case logging.status.INFO:
+                    case logging.statusCodes.INFO:
                         color = '#4B946A';
                         break;
-                    case logging.status.DELAY:
+                    case logging.statusCodes.DELAY:
                         color = '#333333';
                         break;
-                    case logging.status.ERROR:
+                    case logging.statusCodes.ERROR:
                         color = '#C90C22';
                         break;
                     default:
@@ -107,6 +107,7 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
             settings = new Settings(logger,window.localStorage,defaultSettings);
             pageView = new pages.PageView(logger,pure);
             pageExtractor = new pages.DocumentPageExtractor(logger,document);
+            server = new ServerConnection(logger,settings.getItem('serverUrl'));
 
             bindEvents();
 
@@ -274,6 +275,12 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
                                      this.value +
                                      '"');
                         settings.setItem('serverUrl',this.value);
+                        // Note: This simple method of modifying server url
+                        // in-place here works. If this phenomenon of putting
+                        // something into settings and copying values to other
+                        // places becomes more common, Settings may need its own
+                        // notification system.
+                        server.url = this.value;
                     },false);
 
                     settingsButton.innerHTML = 'hide settings';
@@ -298,7 +305,7 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
             var scanButton, settingsButton, context;
 
             document.addEventListener('deviceready',function() {
-                logger.notify(logging.status.INFO,'Device is Ready');
+                logger.notify(logging.statusCodes.INFO,'Device is Ready');
             },false);
 
             settingsButton = document.getElementById('settingsbutton');
@@ -326,7 +333,9 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
             try {
                 scanner.scan(function(result) {
                     if(result.cancelled) {
-                        logger.notify(logging.status.INFO,'Scan cancelled');
+                        logger
+                                .notify(logging.statusCodes.INFO,
+                                    'Scan cancelled');
                         return;
                     }
 
@@ -340,66 +349,35 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
 
                     requestInfo(result.text);
                 },function(error) {
-                    logger.notify(logging.status.ERROR,'Scanning failed: ' + error);
+                    logger.notify(logging.statusCodes.ERROR,
+                        'Scanning failed: ' + error);
                 });
             } catch(ex) {
-                logger.notify(logging.status.ERROR,'Internal error: ' + ex.message);
+                logger.notify(logging.statusCodes.ERROR,'Internal error: ' +
+                                                        ex.message);
             }
         };
 
-        // Retrieves barcode information from the server. If matching product is
-        // found, takes app to view for that product. If no products are found,
-        // instructs the user to add it to database.
+        // Request info on barcode and act on it. If products with given barcode
+        // are found, display the first of them in 'productview' page. If no
+        // products are found, go to 'productnew' page to add one now.
         requestInfo = function(barcode) {
-            var request, response, url, message;
+            var onFound, onMissing;
 
-            if(!barcode) {
-                message = 'Interal error: Called "requestInfo" without barcode';
-                logger.notify(logging.status.ERROR,message);
-                return;
-            }
+            onFound = function(response) {
+                // TODO: What to do if multiple products are returned?
+                pageView.gotoPage('productview',response.products[0]);
+            };
 
-            url = toBarcodeUrl(barcode);
-            logger.log('Requesting info from ' + url);
-
-            try {
-                request = new XMLHttpRequest();
-                request.open('GET',url,true);
-
-                request.onreadystatechange = function() {
-                    if(request.readyState !== this.DONE) {
-                        return;
-                    }
-
-                    if(request.status === 200) {
-                        logger.notify(logging.status.INFO,'Product found');
-
-                        response = JSON.parse(request.responseText);
-                        // TODO: Pass the whole list as soon as productview
-                        // template supports a list.
-                        pageView.gotoPage('productview',response.products[0]);
-                    } else if(request.status === 404) {
-                        logger.notify(logging.status.INFO,'No data available');
-
-                        newProductInfo = {
-                            barcode: barcode
-                        };
-
-                        pageView.gotoPage('productnew',newProductInfo);
-                    } else if(request.status === 0) {
-                        logger.notify(logging.status.ERROR,'Could not reach server');
-                    } else {
-                        message = 'Internal error: Unexpected status code ' +
-                                  request.status;
-                        logger.notify(logging.status.ERROR,message);
-                    }
+            onMissing = function() {
+                newProductInfo = {
+                    barcode: barcode
                 };
 
-                logger.notify(logging.status.DELAY,'Requesting info...');
-                request.send(null);
-            } catch(ex) {
-                logger.notify(logging.status.ERROR,'Internal error: ' + ex.message);
-            }
+                pageView.gotoPage('productnew',newProductInfo);
+            };
+
+            server.requestInfo(barcode,onFound,onMissing);
         };
 
         // Submits new product to server.
@@ -423,11 +401,12 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
                     }
 
                     if(request.status === 201) {
-                        logger.notify(logging.status.INFO,'Product submitted');
+                        logger.notify(logging.statusCodes.INFO,
+                            'Product submitted');
                     } else {
                         message = 'Internal error: Unexpected status code ' +
                                   request.status;
-                        logger.notify(logging.status.ERROR,message);
+                        logger.notify(logging.statusCodes.ERROR,message);
                     }
                 };
 
@@ -436,10 +415,13 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
                 };
                 // TODO: Image
 
-                logger.notify(logging.status.DELAY,'Submitting product...');
+                logger
+                        .notify(logging.statusCodes.DELAY,
+                            'Submitting product...');
                 request.send(toQueryString(productInfo));
             } catch(ex) {
-                logger.notify(logging.status.ERROR,'Internal error: ' + ex.message);
+                logger.notify(logging.statusCodes.ERROR,'Internal error: ' +
+                                                        ex.message);
             }
         };
 
@@ -465,12 +447,13 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
                     }
 
                     if(request.status === 201) {
-                        logger.notify(logging.status.INFO,'Comment submitted');
+                        logger.notify(logging.statusCodes.INFO,
+                            'Comment submitted');
                         // TODO: Retrieve new product page after submit
                     } else {
                         message = 'Internal error: Unexpected status code ' +
                                   request.status;
-                        logger.notify(logging.status.ERROR,message);
+                        logger.notify(logging.statusCodes.ERROR,message);
                     }
                 };
 
@@ -478,10 +461,13 @@ define(['cordova','js/lib/pure','js/pages','js/logging','js/settings','barcodesc
                     by: username,comment: comment
                 };
 
-                logger.notify(logging.status.DELAY,'Submitting comment...');
+                logger
+                        .notify(logging.statusCodes.DELAY,
+                            'Submitting comment...');
                 request.send(toQueryString(commentInfo));
             } catch(ex) {
-                logger.notify(logging.status.ERROR,'Internal error: ' + ex.message);
+                logger.notify(logging.statusCodes.ERROR,'Internal error: ' +
+                                                        ex.message);
             }
         };
 
