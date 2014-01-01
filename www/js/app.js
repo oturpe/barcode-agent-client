@@ -1,4 +1,4 @@
-/*global window, document, XMLHttpRequest*/
+/*global define, window, document*/
 
 // Barcode Agent application module
 //
@@ -73,7 +73,7 @@ define(['cordova',
             settings = new Settings(logger,window.localStorage,defaultSettings);
             pageView = new pages.PageView(logger,pure);
             pageExtractor = new pages.DocumentPageExtractor(logger,document);
-            server = new ServerConnection(logger,settings.getItem('serverUrl'));
+            server = new ServerConnection(window.XMLHttpRequest,logger,settings.getItem('serverUrl'));
 
             bindEvents();
 

@@ -1,4 +1,4 @@
-/*global XMLHttpRequest */
+/*global define, XMLHttpRequest*/
 
 // Interface to Barcode Agent server. Uses XMLHttpRequest to submit and request
 // data to and from server. Methods accept callbacks which are called depending
@@ -11,8 +11,8 @@ define([],
         var BARCODES_URL, PRODUCTS_URL, COMMENTS_URL_COMPONENT, ServerConnection;
 
         // Server URL components
-        BARCODES_URL = '/barcodes.cgi';
-        PRODUCTS_URL = '/products.cgi';
+        BARCODES_URL = '/barcodes';
+        PRODUCTS_URL = '/products';
         COMMENTS_URL_COMPONENT = 'comments';
 
         // Creates url-encoded string from given object, suitable for http
@@ -33,7 +33,11 @@ define([],
             return query;
         }
 
-        ServerConnection = function(logger,url) {
+        // Creates and initializes new server connection. Uses XMLHttpRequest
+        // internally, so implementation is passed as parameter. Also needs
+        // a logger and server url. 
+        ServerConnection = function(XMLHttpRequest,logger,url) {
+            this.XMLHttpRequest = XMLHttpRequest;
             this.logger = logger;
             this.url = url;
         };
@@ -49,13 +53,13 @@ define([],
             },
             // Creates REST url for comments of given product
             toCommentsUrl: function(productId) {
-                // return this.url +
-                // PRODUCTS_URL +
-                // '/' +
-                // productId +
-                // '/' +
-                // COMMENTS_URL_COMPONENT;
-                return this.url + '/comments.cgi';
+                return this.url +
+                PRODUCTS_URL +
+                '/' +
+                productId +
+                '/' +
+                COMMENTS_URL_COMPONENT;
+                //return this.url + '/comments.cgi';
             },
             // Requests info on given barcode from server. Result handling is
             // done using callback functions. Function onFound in called if
@@ -89,7 +93,7 @@ define([],
                 logger.log('Requesting info from ' + url);
 
                 try {
-                    request = new XMLHttpRequest();
+                    request = new this.XMLHttpRequest();
                     request.open('GET',url,true);
 
                     request.onreadystatechange = function() {
@@ -138,7 +142,7 @@ define([],
                 logger = this.logger;
 
                 try {
-                    request = new XMLHttpRequest();
+                    request = new this.XMLHttpRequest();
                     request.open('POST',this.productsUrl(),true);
 
                     request.onreadystatechange = function() {
@@ -169,14 +173,13 @@ define([],
                     logger.notify(logger.statusCodes.ERROR,'Internal error: ' +
                                                            ex.message);
                 }
-
             },
-            // Submits new product to server. Required data is product, comment
+            // Submits new product to server. Required data is product id, comment
             // text and username. Callback function onSuccess is called after
             // successful submit.
             //
             // Omitting on-success callback is interpreted as no-op callback.
-            submitComment: function(product,comment,username,onSuccess) {
+            submitComment: function(productId,comment,username,onSuccess) {
                 var logger, url, request, response, commentInfo, message;
 
                 onSuccess = onSuccess || function() {};
@@ -185,10 +188,10 @@ define([],
                 // callback function to be executed from within XMLHttpRequest.
                 logger = this.logger;
 
-                url = this.toCommentsUrl(product.id);
+                url = this.toCommentsUrl(productId);
 
                 try {
-                    request = new XMLHttpRequest();
+                    request = new this.XMLHttpRequest();
                     request.open('POST',url,true);
 
                     request.onreadystatechange = function() {
