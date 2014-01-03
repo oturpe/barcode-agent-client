@@ -51,6 +51,10 @@ define([],
             toBarcodeUrl: function(barcode) {
                 return this.url + BARCODES_URL + '/' + barcode;
             },
+            // Creates REST url for product from its id
+            toProductUrl: function (id) {
+                return this.url + PRODUCTS_URL + '/' + id;
+            },
             // Creates REST url for comments of given product
             toCommentsUrl: function(productId) {
                 return this.url +
@@ -72,7 +76,7 @@ define([],
             //
             // Logging happens internally in this method, there is no need to
             // log 'barcode found' or 'barcode not found' messages in callbacks.
-            requestInfo: function(barcode,onFound,onMissing) {
+            requestBarcodeInfo: function (barcode, onFound, onMissing) {
 
                 var logger, request, response, url, message;
 
@@ -83,9 +87,10 @@ define([],
                 // callback function to be executed from within XMLHttpRequest.
                 logger = this.logger;
 
-                if(!barcode) {
-                    message = 'Interal error: Called "requestInfo" without barcode';
-                    logger.notify(logger.statusCodes.ERROR,message);
+                if (!barcode) {
+                    message = 'Interal error: Called "requestBarcodeInfo" ' +
+                        'without barcode';
+                    logger.notify(logger.statusCodes.ERROR, message);
                     return;
                 }
 
@@ -126,6 +131,72 @@ define([],
                 } catch(ex) {
                     logger.notify(logger.statusCodes.ERROR,'Internal error: ' +
                                                            ex.message);
+            },
+            // Requests info on given product from server. Result handling is
+            // done using callback functions. Function onFound in called if
+            // server returns data on barcode. It accepts a single parameter,
+            // which is an object directly parsed from server response JSON. See
+            // protocol specification for exact format. On the other hand, if
+            // data is not found on server, onMissing callback is called.
+            //
+            // Omitting a callback is interpreted as no-op callback.
+            //
+            // Logging happens internally in this method, there is no need to
+            // log 'product found' or 'product not found' messages in callbacks.
+            requestProductInfo: function (productId, onFound, onMissing) {
+                var logger, request, response, url, message;
+
+                onFound = onFound || function () {};
+                onMissing = onMissing || function () {};
+
+                // Get explicit reference to logger as it is needed inside
+                // callback function to be executed from within XMLHttpRequest.
+                logger = this.logger;
+
+                if (!productId) {
+                    message = 'Interal error: Called "requestProductInfo" ' +
+                        'without product id';
+                    logger.notify(logger.statusCodes.ERROR, message);
+                    return;
+                }
+
+                url = this.toProductUrl(productId);
+                logger.log('Requesting info from ' + url);
+
+                try {
+                    request = new this.XMLHttpRequest();
+                    request.open('GET', url, true);
+
+                    request.onreadystatechange = function () {
+                        if (request.readyState !== this.DONE) {
+                            return;
+                        }
+
+                        if (request.status === 200) {
+                            logger.notify(logger.statusCodes.INFO,
+                                'Product found');
+                            onFound(JSON.parse(request.responseText));
+                        } else if (request.status === 404) {
+                            logger.notify(logger.statusCodes.INFO,
+                                'No data available');
+                            onMissing();
+                        } else if (request.status === 0) {
+                            logger.notify(logger.statusCodes.ERROR,
+                                'Could not reach server');
+                        } else {
+                            message = 'Internal error: Unexpected status code ' +
+                                request.status;
+                            logger.notify(logger.statusCodes.ERROR, message);
+                        }
+                    };
+
+                    logger
+                        .notify(logger.statusCodes.DELAY,
+                            'Requesting info...');
+                    request.send(null);
+                } catch (ex) {
+                    logger.notify(logger.statusCodes.ERROR, 'Internal error: ' +
+                        ex.message);
                 }
             },
             // Submits new product to server. Required data is product barcode

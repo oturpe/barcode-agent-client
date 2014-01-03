@@ -18,7 +18,7 @@ define(['cordova',
     function(cordova,pure,pages,logging,Settings,ServerConnection) {
         'use strict';
 
-        var scanner, logger, settings, pageView, server, pageExtractor, newProductInfo, newCommentInfo, initialize, bindEvents, onDeviceReady, receivedEvent, scan, requestInfo;
+        var scanner, logger, settings, pageView, server, pageExtractor, newProductInfo, newCommentInfo, initialize, bindEvents, onDeviceReady, receivedEvent, scan, requestBarcodeInfo;
 
         scanner = cordova.require('cordova/plugin/BarcodeScanner');
 
@@ -156,11 +156,22 @@ define(['cordova',
                     submitElement = this.domPage
                             .querySelector('#commentaddsubmit');
                     submitElement.addEventListener('click',function() {
-                        // TODO: Add onSuccess callback to get back to product
-                        // page.
+                        var onSuccess;
+
+                        onSuccess = function() {
+                            server.requestProductInfo(newCommentInfo.productId,function() {
+                            // TODO: Notification bar currently says 'product
+                            // found'. Does not make much sense.
+                            pageView.gotoPage('productview',product);
+                        },function() {
+                            // TODO: What to do if product is not found at this
+                            // point? Not necessarily an error!
+                        });};
+
                         server.submitComment(newCommentInfo.productId,
                             newCommentInfo.text,
-                            context.username);
+                            context.username,
+                            onSuccess);
                     },false);
 
                     cancelElement = this.domPage
@@ -216,6 +227,7 @@ define(['cordova',
                     onDisplay));
             }());
 
+            // Page for adjusting settings
             (function() {
                 // FIXME: This kind of additional info page should probably be
                 // implemented some kind of modal dialog.
@@ -315,7 +327,7 @@ define(['cordova',
                                result.format +
                                '\n');
 
-                    requestInfo(result.text);
+                    requestBarcodeInfo(result.text);
                 },function(error) {
                     logger.notify(logging.statusCodes.ERROR,
                         'Scanning failed: ' + error);
@@ -329,7 +341,7 @@ define(['cordova',
         // Request info on barcode and act on it. If products with given barcode
         // are found, display the first of them in 'productview' page. If no
         // products are found, go to 'productnew' page to add one.
-        requestInfo = function(barcode) {
+        requestBarcodeInfo = function(barcode) {
             var onFound, onMissing;
 
             onFound = function(response) {
@@ -345,7 +357,7 @@ define(['cordova',
                 pageView.gotoPage('productnew',newProductInfo);
             };
 
-            server.requestInfo(barcode,onFound,onMissing);
+            server.requestBarcodeInfo(barcode,onFound,onMissing);
         };
 
         // Publish interface

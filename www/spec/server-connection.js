@@ -52,7 +52,7 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             });
 
             desc =
-                'sends GET request to barcode url when requesting info';
+                'sends GET request to barcode url when requesting barcode info';
             it(desc, function () {
                 var getUrl;
 
@@ -63,7 +63,7 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
                     logger,
                     url);
 
-                serverConnection.requestInfo(testBarcode);
+                serverConnection.requestBarcodeInfo(testBarcode);
 
                 getUrl = url + '/barcodes' + '/' + testBarcode;
                 expect(XhrMock.prototype.open).toHaveBeenCalledWith(
@@ -85,7 +85,7 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
                 onMissing = jasmine.createSpy(
                     'onMissing');
 
-                serverConnection.requestInfo(
+                serverConnection.requestBarcodeInfo(
                     testBarcode,
                     onFound,
                     onMissing);
@@ -108,7 +108,72 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
                 onMissing = jasmine.createSpy(
                     'onMissing');
 
-                serverConnection.requestInfo(
+                serverConnection.requestBarcodeInfo(
+                    testBarcode,
+                    onFound);
+
+                expect(onFound).toHaveBeenCalled();
+                expect(onMissing).not.toHaveBeenCalled();
+            });
+
+                        desc =
+                'sends GET request to product url when requesting product info';
+            it(desc, function () {
+                var getUrl;
+
+                spyOn(XhrMock.prototype, 'open').andCallThrough();
+
+                serverConnection = new ServerConnection(
+                    XhrMock,
+                    logger,
+                    url);
+
+                serverConnection.requestProductInfo(testProductId);
+
+                getUrl = url + '/products/' + testProductId;
+                expect(XhrMock.prototype.open).toHaveBeenCalledWith(
+                    'GET', getUrl, true);
+            });
+
+            desc =
+                'calls on-missing handler if product info is not found';
+            it(desc, function () {
+                var onFound, onMissing;
+
+                XhrMock.status = 404;
+                serverConnection = new ServerConnection(
+                    XhrMock,
+                    logger,
+                    url);
+
+                onFound = jasmine.createSpy('onFound');
+                onMissing = jasmine.createSpy(
+                    'onMissing');
+
+                serverConnection.requestProductInfo(
+                    testProductId,
+                    onFound,
+                    onMissing);
+
+                expect(onFound).not.toHaveBeenCalled();
+                expect(onMissing).toHaveBeenCalled();
+            });
+
+            desc =
+                'calls on-found handler if product info is found';
+            it(desc, function () {
+                var onFound, onMissing;
+
+                XhrMock.status = 200;
+                XhrMock.responseText = '{"a":"aa"}';
+                serverConnection = new ServerConnection(
+                    XhrMock, logger, url);
+
+                onFound = jasmine.createSpy('onFound');
+                onMissing = jasmine.createSpy(
+                    'onMissing');
+
+                serverConnection.requestProductInfo(
                     testBarcode,
                     onFound);
 
