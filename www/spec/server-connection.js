@@ -230,7 +230,7 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
 
                 onSuccess = jasmine.createSpy('onFound');
 
-                serverConnection.requestInfo(testBarcode,
+                serverConnection.submitProduct(testBarcode,
                     testProductName, testUser, onSuccess);
 
                 expect(onSuccess).not.toHaveBeenCalled();
