@@ -15,33 +15,31 @@ define(['cordova',
         'js/settings',
         'js/server-connection',
         'barcodescanner'],
-    function(cordova,pure,pages,logging,Settings,ServerConnection) {
+        function(cordova,pure,pages,logging,Settings,ServerConnection) {
         'use strict';
 
-        var scanner, logger, settings, pageView, server, pageExtractor, newProductInfo, newCommentInfo, initialize, bindEvents, onDeviceReady, receivedEvent, scan, requestBarcodeInfo;
+        var logger, settings, pageView, server, pageExtractor;
 
-        scanner = cordova.require('cordova/plugin/BarcodeScanner');
+        var scanner = cordova.require('cordova/plugin/BarcodeScanner');
 
         // Variable storing details about new product
-        newProductInfo = null;
+        var newProductInfo = null;
 
         // Variable storing details about new comment
-        newCommentInfo = null;
+        var newCommentInfo = null;
 
         // Application Constructor
-        initialize = function() {
-            var defaultSettings, notifier, statusTextElement, settingsButton;
-
-            defaultSettings = {
+        function initialize() {
+            var defaultSettings = {
                 'serverUrl': 'http://barcodeagent.nodejitsu.com',
                 'username': 'Anonymous User'
             };
 
-            statusTextElement = document.getElementById('statustext');
+            var statusTextElement = document.getElementById('statustext');
             // Wraps Cordova notification plugin so that logger can be
             // initialized
             // now without worrying if navigator.notification exists yet.
-            notifier = {
+            var notifier = {
                 // Notifies user by showing message in status bar. Different
                 // notification types and represented by different background
                 // colors.
@@ -73,7 +71,9 @@ define(['cordova',
             settings = new Settings(logger,window.localStorage,defaultSettings);
             pageView = new pages.PageView(logger,pure);
             pageExtractor = new pages.DocumentPageExtractor(logger,document);
-            server = new ServerConnection(window.XMLHttpRequest,logger,settings.getItem('serverUrl'));
+            server = new ServerConnection(window.XMLHttpRequest,
+                                          logger,
+                                          settings.getItem('serverUrl'));
 
             bindEvents();
 
@@ -104,9 +104,7 @@ define(['cordova',
                 // -id: product id
                 // -name: product name
                 function onDisplay(context) {
-                    var addCommentElement;
-
-                    addCommentElement = this.domPage
+                    var addCommentElement = this.domPage
                             .querySelector('#productcommentadd');
 
                     addCommentElement.addEventListener('click',function() {
@@ -120,7 +118,8 @@ define(['cordova',
                         commentContext = {
                             product: {
                                 name: context.name
-                            },username: settings.getItem('username')
+                            },
+                            username: settings.getItem('username')
                         };
 
                         pageView.gotoPage('commentadd',commentContext);
@@ -128,15 +127,14 @@ define(['cordova',
                 }
 
                 pageView.addPage(pageExtractor.extract('productview',
-                    template,
-                    onDisplay));
+                                                       template,
+                                                        onDisplay));
             }());
 
             // Page for adding a comment for product
             (function() {
-                var template;
-
-                template = pure(pages.contentSelector('commentadd')).compile({
+                var contentSelector = pages.contentSelector('commentadd');
+                var template = pure(contentSelector).compile({
                     '#commentaddproduct': 'product.name',
                     '#commentadduser': 'username'
                 });
@@ -146,27 +144,33 @@ define(['cordova',
                 // --name: product name
                 // -username: User name to be submitted as commenter
                 function onDisplay(context) {
-                    var textElement, cancelElement, submitElement;
-
-                    textElement = this.domPage.querySelector('#commentaddtext');
+                    var textElement = this.domPage
+                                          .querySelector('#commentaddtext');
                     textElement.addEventListener('change',function() {
                         newCommentInfo.text = this.value;
                     });
 
-                    submitElement = this.domPage
-                            .querySelector('#commentaddsubmit');
+                    var submitElement = this.domPage
+                                            .querySelector('#commentaddsubmit');
                     submitElement.addEventListener('click',function() {
                         var onSuccess;
 
                         onSuccess = function() {
-                            server.requestProductInfo(newCommentInfo.productId,function() {
-                            // TODO: Notification bar currently says 'product
-                            // found'. Does not make much sense.
-                            pageView.gotoPage('productview',product);
-                        },function() {
-                            // TODO: What to do if product is not found at this
-                            // point? Not necessarily an error!
-                        });};
+                            var onInfoSuccess = function() {
+                                // TODO: Notification bar currently says
+                                // 'product found'. Does not make much sense.
+                                pageView.gotoPage('productview',
+                                                  newCommentInfo.productId);
+                            };
+                            var onInfoMissing = function() {
+                                // TODO: What to do if product is not found at
+                                // this point? Not necessarily an error!
+                            };
+
+                            server.requestProductInfo(newCommentInfo.productId,
+                                                      onInfoSuccess,
+                                                      onInfoMissing);
+                        };
 
                         server.submitComment(newCommentInfo.productId,
                             newCommentInfo.text,
@@ -174,7 +178,7 @@ define(['cordova',
                             onSuccess);
                     },false);
 
-                    cancelElement = this.domPage
+                    var cancelElement = this.domPage
                             .querySelector('#commentaddcancel');
                     cancelElement.addEventListener('click',function() {
                         pageView.gotoPreviousPage();
@@ -188,9 +192,8 @@ define(['cordova',
 
             // Page for adding new product
             (function() {
-                var template;
-
-                template = pure(pages.contentSelector('productnew')).compile({
+                var contentSelector = pages.contentSelector('productnew');
+                var template = pure(contentSelector).compile({
                     '#productnewbarcode@value': 'barcode',
                     '#productnewname@value': 'name'
                 });
@@ -199,13 +202,12 @@ define(['cordova',
                 // -barcode: barcode of new product
                 // -name: name of new product
                 function onDisplay(context) {
-                    var nameElement, submitElement;
-
                     // TODO: Image
 
-                    nameElement = this.domPage.querySelector('#productnewname');
-                    submitElement = this.domPage
-                            .querySelector('#productnewsubmit');
+                    var nameElement = this.domPage
+                                          .querySelector('#productnewname');
+                    var submitElement = this.domPage
+                                            .querySelector('#productnewsubmit');
 
                     nameElement.addEventListener('change',function() {
                         newProductInfo.name = this.value;
@@ -231,24 +233,22 @@ define(['cordova',
             (function() {
                 // FIXME: This kind of additional info page should probably be
                 // implemented some kind of modal dialog.
-                var template, settingsButton;
-
-                template = pure(pages.contentSelector('settings')).compile({
-                    '#username@value': 'username','#serverurl@value': 'url'
+                var template = pure(pages.contentSelector('settings')).compile({
+                    '#username@value': 'username',
+                    '#serverurl@value': 'url'
                 });
 
-                settingsButton = document.querySelector('#settingsbutton');
+                var settingsButton = document.querySelector('#settingsbutton');
 
                 function onDisplay(context) {
-                    var usernameInput, serverUrlInput;
-
-                    usernameInput = this.domPage.querySelector('#username');
+                    var usernameInput = this.domPage.querySelector('#username');
                     usernameInput.addEventListener('change',function() {
                         logger.log('Setting username to "' + this.value + '"');
                         settings.setItem('username',this.value);
                     },false);
 
-                    serverUrlInput = this.domPage.querySelector('#serverurl');
+                    var serverUrlInput = this.domPage
+                                             .querySelector('#serverurl');
                     serverUrlInput.addEventListener('change',function() {
                         logger
                                 .log('Setting server URL to "' +
@@ -278,22 +278,20 @@ define(['cordova',
             }());
 
             pageView.gotoPage('intro');
-        };
+        }
 
         // Bind Event Listeners
-        bindEvents = function() {
-            var scanButton, settingsButton, context;
-
+        function bindEvents() {
             document.addEventListener('deviceready',function() {
                 logger.notify(logging.statusCodes.INFO,'Device is Ready');
             },false);
 
-            settingsButton = document.getElementById('settingsbutton');
+            var settingsButton = document.getElementById('settingsbutton');
             settingsButton.addEventListener('click',function() {
                 if(pageView.currentPage.id === 'settings') {
                     pageView.gotoPreviousPage();
                 } else {
-                    context = {
+                    var context = {
                         'username': settings.getItem('username'),
                         'url': settings.getItem('serverUrl')
                     };
@@ -301,21 +299,23 @@ define(['cordova',
                 }
             },false);
 
-            scanButton = document.getElementById('scanbutton');
+            var scanButton = document.getElementById('scanbutton');
             scanButton.addEventListener('click',scan,false);
-        };
+        }
 
         // Scan barcode
         //
         // Calls barcode scanner plugin code.
-        scan = function() {
+        function scan() {
             logger.log('scanning');
             try {
                 scanner.scan(function(result) {
                     if(result.cancelled) {
+                        var foo = 2;
                         logger
                                 .notify(logging.statusCodes.INFO,
                                     'Scan cancelled');
+                        foo = foo + 1;
                         return;
                     }
 
@@ -336,20 +336,18 @@ define(['cordova',
                 logger.notify(logging.statusCodes.ERROR,'Internal error: ' +
                                                         ex.message);
             }
-        };
+        }
 
         // Request info on barcode and act on it. If products with given barcode
         // are found, display the first of them in 'productview' page. If no
         // products are found, go to 'productnew' page to add one.
-        requestBarcodeInfo = function(barcode) {
-            var onFound, onMissing;
-
-            onFound = function(response) {
+        function requestBarcodeInfo(barcode) {
+            var onFound = function(response) {
                 // TODO: What to do if multiple products are returned?
                 pageView.gotoPage('productview',response.products[0]);
             };
 
-            onMissing = function() {
+            var onMissing = function() {
                 newProductInfo = {
                     barcode: barcode
                 };
@@ -358,7 +356,7 @@ define(['cordova',
             };
 
             server.requestBarcodeInfo(barcode,onFound,onMissing);
-        };
+        }
 
         // Publish interface
         return {

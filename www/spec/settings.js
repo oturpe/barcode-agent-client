@@ -10,9 +10,11 @@ define(['js/settings'],function(Settings) {
 
             beforeEach(function() {
                 storage = {
-                    values: {},setItem: function(key,value) {
+                    values: {},
+                    setItem: function(key,value) {
                         this.values[key] = value;
-                    },getItem: function(key) {
+                    },
+                    getItem: function(key) {
                         return this.values[key];
                     }
                 };

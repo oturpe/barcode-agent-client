@@ -28,24 +28,24 @@ define(['js/logging','jasmine/jasmine'],function(logging) {
                         .toHaveBeenCalledWith('PREFIX Testmessage');
             });
 
-            it('sends notifications to both base logger and notifier',
-                function() {
-                    var logger, DELAY, expected;
+            var desc = 'sends notifications to both base logger and notifier';
+            it(desc,function() {
+                var logger, DELAY, expected;
 
-                    logger = new logging.Logger('PREFIX',baseLogger,notifier);
-                    DELAY = logging.statusCodes.DELAY;
+                logger = new logging.Logger('PREFIX',baseLogger,notifier);
+                DELAY = logging.statusCodes.DELAY;
 
-                    spyOn(baseLogger,'log');
-                    spyOn(notifier,'notify');
+                spyOn(baseLogger,'log');
+                spyOn(notifier,'notify');
 
-                    logger.notify(DELAY,'Testnotify');
+                logger.notify(DELAY,'Testnotify');
 
-                    expected = 'PREFIX [DELAY] Testnotify';
+                expected = 'PREFIX [DELAY] Testnotify';
 
-                    expect(baseLogger.log).toHaveBeenCalledWith(expected);
-                    expect(notifier.notify).toHaveBeenCalledWith(DELAY,
-                        'Testnotify');
-                });
+                expect(baseLogger.log).toHaveBeenCalledWith(expected);
+                expect(notifier.notify).toHaveBeenCalledWith(DELAY,
+                                                             'Testnotify');
+            });
         });
     });
 });

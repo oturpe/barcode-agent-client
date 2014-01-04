@@ -1,3 +1,5 @@
+/*global define*/
+
 // Settings container for Barcode Agent client.
 //
 // Settings are collection of key-value pairs. They can be stored in any

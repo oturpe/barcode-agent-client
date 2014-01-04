@@ -1,16 +1,24 @@
+/*global requirejs*/
+
 requirejs.config({
-    baseUrl: '',paths: {
+    baseUrl: '',
+    paths: {
         jasmine: 'spec/lib/jasmine-1.2.0'
-    },shim: {
+    },
+    shim: {
         'cordova': {
             exports: 'cordova'
-        },'barcodescanner': {
+        },
+        'barcodescanner': {
             deps: ['cordova']
-        },'js/lib/pure': {
+        },
+        'js/lib/pure': {
             exports: 'pure'
-        }, 'jasmine/jasmine': {
+        },
+        'jasmine/jasmine': {
             exports: 'jasmine'
-        }, 'jasmine/jasmine-html': {
+        },
+        'jasmine/jasmine-html': {
             deps: ['jasmine/jasmine'],
             exports: 'jasmine'
         }

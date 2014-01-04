@@ -1,4 +1,4 @@
-/*global define, describe, it, xit, beforeEach, expect, spyOn*/
+/*global define, describe, it, beforeEach, expect, spyOn*/
 
 define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
     jasmine, logging, ServerConnection) {
@@ -7,25 +7,23 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
     var desc;
     describe('server-connection', function () {
         describe('ServerConnection', function () {
-            var testBarcode, testProductId, testProductName, testUser, testComment, logger, url,
-                XhrMock,
-                serverConnection;
-
-            testBarcode = 'testBarcode';
-            testProductId = 'testProductId';
-            testProductName = 'testProductName';
-            testUser = 'testUser';
-            testComment = 'test comment text';
+            var testBarcode = 'testBarcode';
+            var testProductId = 'testProductId';
+            var testProductName = 'testProductName';
+            var testUser = 'testUser';
+            var testComment = 'test comment text';
 
             // Simple logger test double that ignores all log
             // messages
-            logger = {
+            var logger = {
                 statusCodes: logging.statusCodes,
                 log: function () {},
                 notify: function () {}
             };
 
-            url = 'http://unittest.barcodeagent.com';
+            var url = 'http://unittest.barcodeagent.com';
+
+            var XhrMock;
 
             beforeEach(function () {
                 // Constructor for simple XMLHttpRequest mock that sets
@@ -54,18 +52,16 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             desc =
                 'sends GET request to barcode url when requesting barcode info';
             it(desc, function () {
-                var getUrl;
-
                 spyOn(XhrMock.prototype, 'open').andCallThrough();
 
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock,
                     logger,
                     url);
 
                 serverConnection.requestBarcodeInfo(testBarcode);
 
-                getUrl = url + '/barcodes' + '/' + testBarcode;
+                var getUrl = url + '/barcodes' + '/' + testBarcode;
                 expect(XhrMock.prototype.open).toHaveBeenCalledWith(
                     'GET', getUrl, true);
             });
@@ -73,16 +69,14 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             desc =
                 'calls on-missing handler if barcode info is not found';
             it(desc, function () {
-                var onFound, onMissing;
-
                 XhrMock.status = 404;
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock,
                     logger,
                     url);
 
-                onFound = jasmine.createSpy('onFound');
-                onMissing = jasmine.createSpy(
+                var onFound = jasmine.createSpy('onFound');
+                var onMissing = jasmine.createSpy(
                     'onMissing');
 
                 serverConnection.requestBarcodeInfo(
@@ -97,15 +91,13 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             desc =
                 'calls on-found handler if barcode info is found';
             it(desc, function () {
-                var onFound, onMissing;
-
                 XhrMock.status = 200;
                 XhrMock.responseText = '{"a":"aa"}';
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock, logger, url);
 
-                onFound = jasmine.createSpy('onFound');
-                onMissing = jasmine.createSpy(
+                var onFound = jasmine.createSpy('onFound');
+                var onMissing = jasmine.createSpy(
                     'onMissing');
 
                 serverConnection.requestBarcodeInfo(
@@ -116,21 +108,19 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
                 expect(onMissing).not.toHaveBeenCalled();
             });
 
-                        desc =
+            desc =
                 'sends GET request to product url when requesting product info';
             it(desc, function () {
-                var getUrl;
-
                 spyOn(XhrMock.prototype, 'open').andCallThrough();
 
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock,
                     logger,
                     url);
 
                 serverConnection.requestProductInfo(testProductId);
 
-                getUrl = url + '/products/' + testProductId;
+                var getUrl = url + '/products/' + testProductId;
                 expect(XhrMock.prototype.open).toHaveBeenCalledWith(
                     'GET', getUrl, true);
             });
@@ -138,16 +128,14 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             desc =
                 'calls on-missing handler if product info is not found';
             it(desc, function () {
-                var onFound, onMissing;
-
                 XhrMock.status = 404;
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock,
                     logger,
                     url);
 
-                onFound = jasmine.createSpy('onFound');
-                onMissing = jasmine.createSpy(
+                var onFound = jasmine.createSpy('onFound');
+                var onMissing = jasmine.createSpy(
                     'onMissing');
 
                 serverConnection.requestProductInfo(
@@ -162,15 +150,13 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             desc =
                 'calls on-found handler if product info is found';
             it(desc, function () {
-                var onFound, onMissing;
-
                 XhrMock.status = 200;
                 XhrMock.responseText = '{"a":"aa"}';
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock, logger, url);
 
-                onFound = jasmine.createSpy('onFound');
-                onMissing = jasmine.createSpy(
+                var onFound = jasmine.createSpy('onFound');
+                var onMissing = jasmine.createSpy(
                     'onMissing');
 
                 serverConnection.requestProductInfo(
@@ -184,11 +170,9 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             desc =
                 'sends POST request to product url when submitting product';
             it(desc, function () {
-                var postUrl;
-
                 spyOn(XhrMock.prototype, 'open').andCallThrough();
 
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock,
                     logger,
                     url);
@@ -196,7 +180,7 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
                 serverConnection.submitProduct(testBarcode,
                     testProductName, testUser);
 
-                postUrl = url + '/products';
+                var postUrl = url + '/products';
                 expect(XhrMock.prototype.open).toHaveBeenCalledWith(
                     'POST', postUrl, true);
             });
@@ -204,13 +188,11 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             desc =
                 'calls on-success handler if server created submitted product';
             it(desc, function () {
-                var onSuccess;
-
                 XhrMock.status = 201;
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock, logger, url);
 
-                onSuccess = jasmine.createSpy('onSuccess');
+                var onSuccess = jasmine.createSpy('onSuccess');
 
                 serverConnection.submitProduct(testBarcode,
                     testProductName, testUser, onSuccess);
@@ -221,14 +203,12 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             desc =
                 'does not call on-success handler if product submit fails';
             it(desc, function () {
-                var onSuccess;
-
                 XhrMock.status = 200;
                 XhrMock.responseText = '{"a":"aa"}';
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock, logger, url);
 
-                onSuccess = jasmine.createSpy('onFound');
+                var onSuccess = jasmine.createSpy('onFound');
 
                 serverConnection.submitProduct(testBarcode,
                     testProductName, testUser, onSuccess);
@@ -237,14 +217,12 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             });
 
             desc =
-                'sends POST request to product comments url when ' + 
+                'sends POST request to product comments url when ' +
                 'submitting a comment';
             it(desc, function () {
-                var postUrl;
-
                 spyOn(XhrMock.prototype, 'open').andCallThrough();
 
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock,
                     logger,
                     url);
@@ -252,7 +230,8 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
                 serverConnection.submitComment(testProductId,
                     testComment, testUser);
 
-                postUrl = url + '/products' + '/' + testProductId + '/comments' ;
+                var postUrl =
+                    url + '/products' + '/' + testProductId + '/comments' ;
                 expect(XhrMock.prototype.open).toHaveBeenCalledWith(
                     'POST', postUrl, true);
             });
@@ -261,13 +240,11 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
                 'calls on-success handler if server created submitted ' +
                 'product comment';
             it(desc, function () {
-                var onSuccess;
-
                 XhrMock.status = 201;
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock, logger, url);
 
-                onSuccess = jasmine.createSpy('onSuccess');
+                var onSuccess = jasmine.createSpy('onSuccess');
 
                 serverConnection.submitComment(testProductId,
                     testComment, testUser,onSuccess);
@@ -279,14 +256,12 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
                 'does not call on-success handler if product comment submit ' +
                 'fails';
             it(desc, function () {
-                var onSuccess;
-
                 XhrMock.status = 200;
                 XhrMock.responseText = '{"a":"aa"}';
-                serverConnection = new ServerConnection(
+                var serverConnection = new ServerConnection(
                     XhrMock, logger, url);
 
-                onSuccess = jasmine.createSpy('onFound');
+                var onSuccess = jasmine.createSpy('onFound');
 
                 serverConnection.submitComment(testProductId,
                     testComment, testUser,onSuccess);
