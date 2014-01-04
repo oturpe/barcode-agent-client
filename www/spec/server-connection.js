@@ -189,6 +189,7 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
                 'calls on-success handler if server created submitted product';
             it(desc, function () {
                 XhrMock.status = 201;
+                XhrMock.responseText = '{"id":"123"}';
                 var serverConnection = new ServerConnection(
                     XhrMock, logger, url);
 

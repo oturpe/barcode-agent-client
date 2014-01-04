@@ -159,7 +159,7 @@ define(['cordova',
                         var onInfoFound = function() {
                             logger.notify(logger.statusCodes.INFO,
                                           'Comment submitted');
-                
+
                             pageView.gotoPage('productview',
                                               newCommentInfo.productId);
                         };
@@ -218,13 +218,14 @@ define(['cordova',
                 // is not to be edited by user.
 
                 submitElement.addEventListener('click',function() {
-                    function onSuccess() {
+                    function onSuccess(product) {
                         // TODO: Retrieve newly created product page
                         // afterwards.
                         logger.notify(logger.statusCodes.INFO,
                                       'Product submitted');
+                        pageView.gotoPage('productview',product);
                     }
-                    
+
                     server.submitProduct(newProductInfo.barcode,
                                          newProductInfo.name,
                                          settings.getItem('username'),

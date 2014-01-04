@@ -36,7 +36,7 @@ define([],function() {
 
     // Creates and initializes new server connection. Uses XMLHttpRequest
     // internally, so implementation is passed as parameter. Also needs
-    // a logger and server url. 
+    // a logger and server url.
     var ServerConnection = function(XMLHttpRequest,logger,url) {
         this.XMLHttpRequest = XMLHttpRequest;
         this.logger = logger;
@@ -136,10 +136,10 @@ define([],function() {
 
     // Requests info on given product from server. Result handling is
     // done using callback functions. Function onFound in called if
-    // server returns data on barcode. It accepts a single parameter,
+    // server returns data on barcode. It is passed a single parameter,
     // which is an object directly parsed from server response JSON. See
-    // protocol specification for exact format. On the other hand, if
-    // data is not found on server, onMissing callback is called.
+    // protocol specification for exact response contents. On the other hand,
+    // if data is not found on server, onMissing callback is called.
     //
     // Omitting a callback is interpreted as no-op callback.
     //
@@ -200,7 +200,9 @@ define([],function() {
 
     // Submits new product to server. Required data is product barcode
     // and name. Callback function onSuccess is called after successful
-    // submit.
+    // submit. It is passed a single parameter, which is an object directly
+    // parsed from server response JSON. See protocol specification for exact
+    // response contents.
     //
     // Omitting on-success callback is interpreted as no-op callback.
     //
@@ -228,7 +230,7 @@ define([],function() {
                 }
 
                 if(request.status === 201) {
-                    onSuccess();
+                    onSuccess(JSON.parse(request.responseText));
                 } else {
                     var message = 'Internal error: Unexpected status code ' +
                                   request.status;
@@ -250,7 +252,7 @@ define([],function() {
         }
     };
 
-    // Submits new product to server. Required data is product id, 
+    // Submits new product to server. Required data is product id,
     // comment text and username. Callback function onSuccess is called
     // after successful submit.
     //
