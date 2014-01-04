@@ -128,7 +128,7 @@ define(['cordova',
 
                 pageView.addPage(pageExtractor.extract('productview',
                                                        template,
-                                                        onDisplay));
+                                                       onDisplay));
             }());
 
             // Page for adding a comment for product
@@ -156,9 +156,10 @@ define(['cordova',
                         var onSuccess;
 
                         onSuccess = function() {
-                            var onInfoSuccess = function() {
-                                // TODO: Notification bar currently says
-                                // 'product found'. Does not make much sense.
+                            var onInfoFound = function() {
+                                logger.notify(logger.statusCodes.INFO,
+                                              'Comment submitted');
+                    
                                 pageView.gotoPage('productview',
                                                   newCommentInfo.productId);
                             };
@@ -168,14 +169,14 @@ define(['cordova',
                             };
 
                             server.requestProductInfo(newCommentInfo.productId,
-                                                      onInfoSuccess,
+                                                      onInfoFound,
                                                       onInfoMissing);
                         };
 
                         server.submitComment(newCommentInfo.productId,
-                            newCommentInfo.text,
-                            context.username,
-                            onSuccess);
+                                             newCommentInfo.text,
+                                             context.username,
+                                             onSuccess);
                     },false);
 
                     var cancelElement = this.domPage
@@ -217,10 +218,17 @@ define(['cordova',
                     // is not to be edited by user.
 
                     submitElement.addEventListener('click',function() {
-                        // TODO: Retrieve newly created product page afterwards
+                        function onSuccess() {
+                            // TODO: Retrieve newly created product page
+                            // afterwards.
+                            logger.notify(logger.statusCodes.INFO,
+                                          'Product submitted');
+                        }
+                        
                         server.submitProduct(newProductInfo.barcode,
-                            newProductInfo.name,
-                            settings.getItem('username'));
+                                             newProductInfo.name,
+                                             settings.getItem('username'),
+                                             onSuccess);
                     },false);
                 }
 
@@ -344,14 +352,15 @@ define(['cordova',
         function requestBarcodeInfo(barcode) {
             var onFound = function(response) {
                 // TODO: What to do if multiple products are returned?
+                logger.notify(logger.statusCodes.INFO,'Product found');
+
                 pageView.gotoPage('productview',response.products[0]);
             };
 
             var onMissing = function() {
-                newProductInfo = {
-                    barcode: barcode
-                };
+                logger.notify(logger.statusCodes.INFO,'No data available');
 
+                newProductInfo = {barcode: barcode};
                 pageView.gotoPage('productnew',newProductInfo);
             };
 

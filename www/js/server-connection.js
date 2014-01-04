@@ -57,7 +57,7 @@ define([],function() {
     ServerConnection.prototype.toProductUrl = function (id) {
         return this.url + PRODUCTS_URL + '/' + id;
     };
-    
+
     // Creates REST url for comments of given product
     ServerConnection.prototype.toCommentsUrl = function (productId) {
         return this.url +
@@ -78,8 +78,10 @@ define([],function() {
     //
     // Omitting a callback is interpreted as no-op callback.
     //
-    // Logging happens internally in this method, there is no need to
-    // log 'barcode found' or 'barcode not found' messages in callbacks.
+    // Errors and request progress are logger internally in this method except
+    // for code paths that end in calling the handlers. They are expected to do
+    // their own logging. This allows customization of logging and notifications
+    // by caller.
     ServerConnection.prototype.requestBarcodeInfo = function (barcode,
                                                               onFound,
                                                               onMissing) {
@@ -111,10 +113,8 @@ define([],function() {
                 }
 
                 if(request.status === 200) {
-                    logger.notify(logger.statusCodes.INFO,'Product found');
                     onFound(JSON.parse(request.responseText));
                 } else if(request.status === 404) {
-                    logger.notify(logger.statusCodes.INFO,'No data available');
                     onMissing();
                 } else if(request.status === 0) {
                     logger.notify(logger.statusCodes.ERROR,
@@ -143,8 +143,10 @@ define([],function() {
     //
     // Omitting a callback is interpreted as no-op callback.
     //
-    // Logging happens internally in this method, there is no need to
-    // log 'product found' or 'product not found' messages in callbacks.
+    // Errors and request progress are logger internally in this method except
+    // for code paths that end in calling the handlers. They are expected to do
+    // their own logging. This allows customization of logging and notifications
+    // by caller.
     ServerConnection.prototype.requestProductInfo = function (productId,
                                                               onFound,
                                                               onMissing) {
@@ -175,10 +177,8 @@ define([],function() {
                 }
 
                 if (request.status === 200) {
-                    logger.notify(logger.statusCodes.INFO,'Product found');
                     onFound(JSON.parse(request.responseText));
                 } else if (request.status === 404) {
-                    logger.notify(logger.statusCodes.INFO,'No data available');
                     onMissing();
                 } else if (request.status === 0) {
                     logger.notify(logger.statusCodes.ERROR,
@@ -203,6 +203,11 @@ define([],function() {
     // submit.
     //
     // Omitting on-success callback is interpreted as no-op callback.
+    //
+    // Errors and request progress are logger internally in this method except
+    // for code paths that end in calling the handler. It is expected to do
+    // its own logging. This allows customization of logging and notifications
+    // by caller.
     ServerConnection.prototype.submitProduct = function(barcode,
                                                         productName,
                                                         user,
@@ -223,7 +228,6 @@ define([],function() {
                 }
 
                 if(request.status === 201) {
-                    logger.notify(logger.statusCodes.INFO,'Product submitted');
                     onSuccess();
                 } else {
                     var message = 'Internal error: Unexpected status code ' +
@@ -251,6 +255,11 @@ define([],function() {
     // after successful submit.
     //
     // Omitting on-success callback is interpreted as no-op callback.
+    //
+    // Errors and request progress are logger internally in this method except
+    // for code paths that end in calling the handler. It is expected to do
+    // its own logging. This allows customization of logging and notifications
+    // by caller.
     ServerConnection.prototype.submitComment = function(productId,
                                                         comment,
                                                         username,
@@ -273,7 +282,6 @@ define([],function() {
                 }
 
                 if(request.status === 201) {
-                    logger.notify(logger.statusCodes.INFO,'Comment submitted');
                     onSuccess();
                 } else {
                     var message = 'Internal error: Unexpected status code ' +
