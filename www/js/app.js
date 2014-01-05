@@ -88,9 +88,12 @@ define(['cordova',
 
         // Page for viewing a product
         (function() {
-            // TODO: Handle a list of products
             var template = pure(pages.contentSelector('productview')).compile({
                 '#productname': 'name',
+                '#productimage@src': 'image.url',
+                '#productimage@alt': 'name',
+                '#productimageby': 'image.by',
+                '#productimagedate': 'image.date',
                 '.productcomment': {
                     'comment<-comments': {
                         '.commentby': 'comment.by',
@@ -103,7 +106,23 @@ define(['cordova',
             // Context:
             // -id: product id
             // -name: product name
+            // -image: object containing image data (optional)
             function onDisplay(context) {
+                var productFigureElement =
+                    this.domPage.querySelector('#productfigure');
+                var productFigureMissingElement =
+                   this.domPage.querySelector('#productfiguremissing');
+                if(!context.image) {
+                    productFigureElement.style.display = 'none';
+                    productFigureMissingElement.style.display = 'block';
+                }
+
+                var productImageAddEĺement =
+                    this.domPage.querySelector('#productimageadd');
+                productImageAddEĺement.addEventListener('click',function() {
+                    // TODO: Take image with camera and submit.
+                });
+
                 var addCommentElement =
                     this.domPage.querySelector('#productcommentadd');
 

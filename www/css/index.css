@@ -79,6 +79,11 @@ h1 {
 .page {
     display: none;
 }
+
+.productfigure {
+    text-align: center;
+}
+
 #productcommentheader {
     /* Makes this element grow to enclose also floating content. */
     overflow: auto;
@@ -91,4 +96,8 @@ h1 {
 
 .commentby {
     float: left;
+}
+
+#productfiguremissing {
+    display: none;
 }

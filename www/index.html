@@ -32,7 +32,23 @@
         <div id="productview" class="page">
             <div id="productviewcontent" class="pagecontent">
                 <h1 id="productname">Product name</h1>
-                <img id="productimage" />
+                <div id="productfigure" class="productfigure">
+                    <img id="productimage"/>
+                    <div id="productimagecaption">
+                        Image added by <span id="productimageby">user</span> on
+                        <span id="productimagedate">date</span>.
+                    </div>
+                </div>
+                <div id="productfiguremissing">
+                    <p>
+                        No image for this product. You can contribute by taking
+                        one now and submitting it.
+                    </p>
+                    <p>
+                        <input id="productimageadd" type="button"
+                            value="Add image">
+                    </p>
+                </div>
                 <div id="productcomments">
                     <h2>Comments</h2>
                     <p>
