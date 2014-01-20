@@ -4,3 +4,6 @@
 platforms/android/gen/
 platforms/android/bin/
 platforms/android/assets/
+
+# Android platform local configuration
+platforms/android/local.properties
