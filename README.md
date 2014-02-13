@@ -6,7 +6,7 @@ Barcode Agent mobile app
 Developer Setup
 ---------------
 
-You need at least [Android SDK][android] and [Apache Cordova][cordova] 3.0.0 installed.
+You need at least [Android SDK][android] and [Apache Cordova][cordova] 3.3.0 installed.
 
 [android]: http://developer.android.com/sdk/index.html
 [cordova]: http://cordova.apache.org/
