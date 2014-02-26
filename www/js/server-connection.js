@@ -4,35 +4,13 @@
 // data to and from server. Methods accept callbacks which are called depending
 // on status code returned by server, so different actions can be taken for
 // found data, missing data and so on.
-define([],function() {
+define(['js/server-utils'],function(utils) {
     'use strict';
 
     // Server URL components
     var BARCODES_URL = '/barcodes';
     var PRODUCTS_URL = '/products';
     var COMMENTS_URL_COMPONENT = 'comments';
-
-    // Creates url-encoded string from given object, suitable for http
-    // get and post queries.
-    function toQueryString(obj) {
-        var query = '';
-
-        var keys = Object.keys(obj);
-        var length = keys.length;
-
-        var key;
-        for(var i = 0; i < length; i += 1) {
-            key = keys[i];
-
-            if(i > 0) {
-                query += '&';
-            }
-
-            query += key + '=' + encodeURIComponent(obj[key]);
-        }
-
-        return query;
-    }
 
     // Creates and initializes new server connection. Uses XMLHttpRequest
     // internally, so implementation is passed as parameter. Also needs
@@ -72,7 +50,7 @@ define([],function() {
     // Requests info on given barcode from server. Result handling is
     // done using callback functions. Function onFound in called if
     // server returns data on barcode. It accepts a single parameter,
-    // which is an object directly parsed from server response JSON. See
+    // which is an object parsed from server response JSON. See
     // protocol specification for exact format. On the other hand, if
     // data is not found on server, onMissing callback is called.
     //
@@ -113,7 +91,7 @@ define([],function() {
                 }
 
                 if(request.status === 200) {
-                    onFound(JSON.parse(request.responseText));
+                    onFound(utils.readMongoResponse(request.responseText));
                 } else if(request.status === 404) {
                     onMissing();
                 } else if(request.status === 0) {
@@ -137,7 +115,7 @@ define([],function() {
     // Requests info on given product from server. Result handling is
     // done using callback functions. Function onFound in called if
     // server returns data on barcode. It is passed a single parameter,
-    // which is an object directly parsed from server response JSON. See
+    // which is an object parsed from server response JSON. See
     // protocol specification for exact response contents. On the other hand,
     // if data is not found on server, onMissing callback is called.
     //
@@ -177,7 +155,7 @@ define([],function() {
                 }
 
                 if (request.status === 200) {
-                    onFound(JSON.parse(request.responseText));
+                    onFound(utils.readMongoResponse(request.responseText));
                 } else if (request.status === 404) {
                     onMissing();
                 } else if (request.status === 0) {
@@ -200,7 +178,7 @@ define([],function() {
 
     // Submits new product to server. Required data is product barcode
     // and name. Callback function onSuccess is called after successful
-    // submit. It is passed a single parameter, which is an object directly
+    // submit. It is passed a single parameter, which is an object
     // parsed from server response JSON. See protocol specification for exact
     // response contents.
     //
@@ -230,7 +208,7 @@ define([],function() {
                 }
 
                 if(request.status === 201) {
-                    onSuccess(JSON.parse(request.responseText));
+                    onSuccess(utils.readMongoResponse(request.responseText));
                 } else {
                     var message = 'Internal error: Unexpected status code ' +
                                   request.status;
@@ -245,7 +223,7 @@ define([],function() {
             // TODO: Image
 
             logger.notify(logger.statusCodes.DELAY,'Submitting product...');
-            request.send(toQueryString(productInfo));
+            request.send(utils.toQueryString(productInfo));
         } catch(ex) {
             logger.notify(logger.statusCodes.ERROR,
                           'Internal error: ' + ex.message);
@@ -295,7 +273,7 @@ define([],function() {
             var commentInfo = {by: username,comment: comment};
 
             logger.notify(logger.statusCodes.DELAY,'Submitting comment...');
-            request.send(toQueryString(commentInfo));
+            request.send(utils.toQueryString(commentInfo));
         } catch(ex) {
             logger.notify(logger.statusCodes.ERROR,
                           'Internal error: ' + ex.message);
