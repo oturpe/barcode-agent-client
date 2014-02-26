@@ -168,6 +168,66 @@ define(['jasmine/jasmine', 'js/logging', 'js/server-connection'], function (
             });
 
             desc =
+                'sends GET request to product comments url when requesting ' +
+                'product comments';
+            it(desc, function () {
+                spyOn(XhrMock.prototype, 'open').andCallThrough();
+
+                var serverConnection = new ServerConnection(
+                    XhrMock,
+                    logger,
+                    url);
+
+                serverConnection.requestComments(testProductId);
+
+                var getUrl = url + '/products/' + testProductId + '/comments';
+                expect(XhrMock.prototype.open).toHaveBeenCalledWith(
+                    'GET', getUrl, true);
+            });
+
+            desc =
+                'calls on-missing handler if product comments are not found';
+            it(desc, function () {
+                XhrMock.status = 404;
+                var serverConnection = new ServerConnection(
+                    XhrMock,
+                    logger,
+                    url);
+
+                var onFound = jasmine.createSpy('onFound');
+                var onMissing = jasmine.createSpy(
+                    'onMissing');
+
+                serverConnection.requestComments(
+                    testProductId,
+                    onFound,
+                    onMissing);
+
+                expect(onFound).not.toHaveBeenCalled();
+                expect(onMissing).toHaveBeenCalled();
+            });
+
+            desc =
+                'calls on-found handler if product comments found';
+            it(desc, function () {
+                XhrMock.status = 200;
+                XhrMock.responseText = '{"a":"aa"}';
+                var serverConnection = new ServerConnection(
+                    XhrMock, logger, url);
+
+                var onFound = jasmine.createSpy('onFound');
+                var onMissing = jasmine.createSpy(
+                    'onMissing');
+
+                serverConnection.requestComments(
+                    testBarcode,
+                    onFound);
+
+                expect(onFound).toHaveBeenCalled();
+                expect(onMissing).not.toHaveBeenCalled();
+            });
+
+            desc =
                 'sends POST request to product url when submitting product';
             it(desc, function () {
                 spyOn(XhrMock.prototype, 'open').andCallThrough();

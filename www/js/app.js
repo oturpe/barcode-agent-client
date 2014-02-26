@@ -98,7 +98,7 @@ define(['cordova',
                     'comment<-comments': {
                         '.commentby': 'comment.by',
                         '.commentdate': 'comment.date',
-                        '.commenttext': 'comment.text'
+                        '.commenttext': 'comment.comment'
                     }
                 }
             });
@@ -172,31 +172,16 @@ define(['cordova',
                 var submitElement =
                     this.domPage.querySelector('#commentaddsubmit');
                 submitElement.addEventListener('click',function() {
-                    var onSuccess;
-
-                    onSuccess = function() {
-                        var onInfoFound = function() {
-                            logger.notify(logger.statusCodes.INFO,
-                                          'Comment submitted');
-
-                            pageView.gotoPage('productview',
-                                              newCommentInfo.productId);
-                        };
-                        var onInfoMissing = function() {
-                            // TODO: What to do if product is not found at
-                            // this point? Not necessarily an error!
-                        };
-
-                        server.requestProductInfo(newCommentInfo.productId,
-                                                  onInfoFound,
-                                                  onInfoMissing);
-                    };
-
                     server.submitComment(newCommentInfo.productId,
                                          newCommentInfo.text,
                                          context.username,
-                                         onSuccess);
+                                         onSubmitSuccess);
                 },false);
+
+                function onSubmitSuccess() {
+                    requestProductWithComments(newCommentInfo.productId,
+                                               'Comment submitted');
+                }
 
                 var cancelElement =
                     this.domPage.querySelector('#commentaddcancel');
@@ -237,19 +222,17 @@ define(['cordova',
                 // is not to be edited by user.
 
                 submitElement.addEventListener('click',function() {
-                    function onSuccess(product) {
-                        // TODO: Retrieve newly created product page
-                        // afterwards.
-                        logger.notify(logger.statusCodes.INFO,
-                                      'Product submitted');
-                        pageView.gotoPage('productview',product);
-                    }
-
                     server.submitProduct(newProductInfo.barcode,
                                          newProductInfo.name,
                                          settings.getItem('username'),
-                                         onSuccess);
+                                         onSubmitSuccess);
                 },false);
+
+                function onSubmitSuccess(product) {
+                    logger.notify(logger.statusCodes.DELAY,
+                                  'Product submitted, updating...');
+                    requestProductWithComments(product.id,'Product submitted');
+                }
             }
 
             pageView.addPage(pageExtractor.extract('productnew',
@@ -368,9 +351,7 @@ define(['cordova',
     function requestBarcodeInfo(barcode) {
         var onFound = function(response) {
             // TODO: What to do if multiple products are returned?
-            logger.notify(logger.statusCodes.INFO,'Product found');
-
-            pageView.gotoPage('productview',response.products[0]);
+            requestProductWithComments(response.products[0].id,'Product found');
         };
 
         var onMissing = function() {
@@ -381,6 +362,32 @@ define(['cordova',
         };
 
         server.requestBarcodeInfo(barcode,onFound,onMissing);
+    }
+
+    // Request product info and act on it. If product with given id
+    // is found, display it along with its comments on 'productview' page.
+    // Given success message is displayed as notification.
+    function requestProductWithComments(productId,successMessage) {
+        var productInfo;
+
+        function onSuccess(product) {
+            productInfo = product;
+
+            logger.notify(logger.statusCodes.DELAY,'Fetching comments...');
+            server.requestComments(product.id,onCommentsSuccess,onMissing);
+        }
+
+        function onCommentsSuccess(comments) {
+            productInfo.comments = comments;
+            logger.notify(logger.statusCodes.INFO,successMessage);
+            pageView.gotoPage('productview',productInfo);
+        }
+
+        function onMissing() {
+            logger.notify(logger.statusCodes.ERROR,'No product found');
+        }
+
+        server.requestProductInfo(productId,onSuccess,onMissing);
     }
 
     // Publish interface

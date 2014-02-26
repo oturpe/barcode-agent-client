@@ -176,6 +176,73 @@ define(['js/server-utils'],function(utils) {
         }
     };
 
+    // Requests comments on given product from server. Result handling is
+    // done using callback functions. Function onFound in called if
+    // server returns comments. It is passed a single parameter,
+    // which is an object parsed from server response JSON. See
+    // protocol specification for exact response contents. On the other hand,
+    // if the product is not found on server, onMissing callback is called.
+    //
+    // Omitting a callback is interpreted as no-op callback.
+    //
+    // Errors and request progress are logger internally in this method except
+    // for code paths that end in calling the handlers. They are expected to do
+    // their own logging. This allows customization of logging and notifications
+    // by caller.
+    ServerConnection.prototype.requestComments = function (productId,
+                                                           onFound,
+                                                           onMissing) {
+        onFound = onFound || function () {};
+        onMissing = onMissing || function () {};
+
+        // Get explicit reference to logger as it is needed inside
+        // callback function to be executed from within XMLHttpRequest.
+        var logger = this.logger;
+
+        if (!productId) {
+            var message = 'Interal error: Called "requestProductInfo" ' +
+                          'without product id';
+            logger.notify(logger.statusCodes.ERROR, message);
+            return;
+        }
+
+        var url = this.toCommentsUrl(productId);
+        logger.log('Requesting info from ' + url);
+
+        try {
+            var request = new this.XMLHttpRequest();
+            request.open('GET', url, true);
+
+            request.onreadystatechange = function () {
+                if (request.readyState !== this.DONE) {
+                    return;
+                }
+
+                if (request.status === 200) {
+                    // TEMP DEBUG >>
+                    logger.log('Got comments: ' + request.responseText);
+                    // << TEMP DEBUG
+                    onFound(utils.readMongoResponse(request.responseText));
+                } else if (request.status === 404) {
+                    onMissing();
+                } else if (request.status === 0) {
+                    logger.notify(logger.statusCodes.ERROR,
+                                  'Could not reach server');
+                } else {
+                    message = 'Internal error: Unexpected status code ' +
+                              request.status;
+                    logger.notify(logger.statusCodes.ERROR, message);
+                }
+            };
+
+            logger.notify(logger.statusCodes.DELAY,'Requesting comments...');
+            request.send(null);
+        } catch (ex) {
+            logger.notify(logger.statusCodes.ERROR,
+                          'Internal error: ' + ex.message);
+        }
+    };
+
     // Submits new product to server. Required data is product barcode
     // and name. Callback function onSuccess is called after successful
     // submit. It is passed a single parameter, which is an object
