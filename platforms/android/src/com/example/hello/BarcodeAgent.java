@@ -20,15 +20,19 @@
 package com.example.hello;
 
 import android.os.Bundle;
+import android.webkit.WebSettings;
 import org.apache.cordova.*;
 
-public class BarcodeAgent extends CordovaActivity 
+public class BarcodeAgent extends CordovaActivity
 {
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         super.init();
+
+        this.appView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+
         // Set by <content src="index.html" /> in config.xml
         super.loadUrl(Config.getStartUrl());
         //super.loadUrl("file:///android_asset/www/index.html")
