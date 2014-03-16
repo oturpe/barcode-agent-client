@@ -12,6 +12,7 @@ define(['js/server-utils'],function(utils) {
     var PRODUCTS_URL = '/products';
     var COMMENTS_URL_COMPONENT = 'comments';
     var IMAGES_URL_COMPONENT = 'images';
+    var FLAGS_URL_COMPONENT = 'flags';
 
     // Supported image types.
     var ImageTypes = {
@@ -64,6 +65,17 @@ define(['js/server-utils'],function(utils) {
                '/' +
                IMAGES_URL_COMPONENT;
         //return this.url + '/images.cgi';
+    };
+
+    // Creates REST url for flags of given product
+    ServerConnection.prototype.toFlagsUrl = function (productId) {
+        return this.url +
+               PRODUCTS_URL +
+               '/' +
+                productId +
+               '/' +
+               FLAGS_URL_COMPONENT;
+        //return this.url + '/flags.cgi';
     };
 
     // Requests info on given barcode from server. Result handling is
@@ -262,6 +274,70 @@ define(['js/server-utils'],function(utils) {
         }
     };
 
+    // Requests flags of given product from server. Result handling is done
+    // using callback functions. Function onFound in called if server returns
+    // flags. It is passed a single parameter, which is an object parsed from
+    // server response JSON. See protocol specification for exact response
+    // contents. On the other hand, if the product is not found on server,
+    // onMissing callback is called.
+    //
+    // Omitting a callback is interpreted as no-op callback.
+    //
+    // Errors and request progress are logged internally in this method except
+    // for code paths that end in calling the handlers. They are expected to do
+    // their own logging. This allows customization of logging and notifications
+    // by caller.
+    ServerConnection.prototype.requestFlags = function (productId,
+                                                        onFound,
+                                                        onMissing) {
+        onFound = onFound || function () {};
+        onMissing = onMissing || function () {};
+
+        // Get explicit reference to logger as it is needed inside
+        // callback function to be executed from within XMLHttpRequest.
+        var logger = this.logger;
+
+        if (!productId) {
+            var message = 'Interal error: Called "requestFlags" ' +
+                          'without product id';
+            logger.notify(logger.statusCodes.ERROR, message);
+            return;
+        }
+
+        var url = this.toFlagsUrl(productId);
+        logger.log('Requesting info from ' + url);
+
+        try {
+            var request = new this.XMLHttpRequest();
+            request.open('GET', url, true);
+
+            request.onreadystatechange = function () {
+                if (request.readyState !== this.DONE) {
+                    return;
+                }
+
+                if (request.status === 200) {
+                    onFound(utils.readMongoResponse(request.responseText));
+                } else if (request.status === 404) {
+                    onMissing();
+                } else if (request.status === 0) {
+                    logger.notify(logger.statusCodes.ERROR,
+                                  'Could not reach server');
+                } else {
+                    message = 'Internal error: Unexpected status code ' +
+                              request.status;
+                    logger.notify(logger.statusCodes.ERROR, message);
+                }
+            };
+
+            logger.notify(logger.statusCodes.DELAY,'Requesting flags...');
+            request.send(null);
+        } catch (ex) {
+            logger.notify(logger.statusCodes.ERROR,
+                          'Internal error: ' + ex.message);
+        }
+    };
+
     // Submits new product to server. Required data is product barcode
     // and name. Callback function onSuccess is called after successful
     // submit. It is passed a single parameter, which is an object
@@ -360,6 +436,54 @@ define(['js/server-utils'],function(utils) {
 
             logger.notify(logger.statusCodes.DELAY,'Submitting comment...');
             request.send(utils.toQueryString(commentInfo));
+        } catch(ex) {
+            logger.notify(logger.statusCodes.ERROR,
+                          'Internal error: ' + ex.message);
+        }
+    };
+
+    // Submits new product flag to server. Required data is product id, flag
+    // name and username. Callback function onSuccess is called after
+    // successful submit. No parameters are passed.
+    //
+    // Omitting on-success callback is interpreted as no-op callback.
+    //
+    // Errors and request progress are logger internally in this method except
+    // for code paths that end in calling the handler. It is expected to do
+    // its own logging. This allows customization of logging and notifications
+    // by caller.
+    ServerConnection.prototype.submitFlag = function(productId,
+                                                     flagName,
+                                                     user,
+                                                     onSuccess) {
+        onSuccess = onSuccess || function() {};
+
+        // Get explicit reference to logger as it is needed inside
+        // callback function to be executed from within XMLHttpRequest.
+        var logger = this.logger;
+
+        try {
+            var request = new this.XMLHttpRequest();
+            request.open('POST',this.toFlagsUrl(productId),true);
+
+            request.onreadystatechange = function() {
+                if(request.readyState !== this.DONE) {
+                    return;
+                }
+
+                if(request.status === 201) {
+                    onSuccess();
+                } else {
+                    var message = 'Internal error: Unexpected status code ' +
+                                  request.status;
+                    logger.notify(logger.statusCodes.ERROR,message);
+                }
+            };
+
+            var flagInfo = {flag: flagName};
+
+            logger.notify(logger.statusCodes.DELAY,'Submitting flag...');
+            request.send(utils.toQueryString(flagInfo));
         } catch(ex) {
             logger.notify(logger.statusCodes.ERROR,
                           'Internal error: ' + ex.message);

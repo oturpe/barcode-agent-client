@@ -49,6 +49,18 @@
                             value="Add image">
                     </p>
                 </div>
+                <div id="productflags">
+                    <h2>Flags</h2>
+                    <div id="productflaglist">
+                        <div class="productflag">
+                            <span class="flagtext"></span>
+                        </div>
+                    </div>
+                    <p>
+                        <input id="productflagadd" type="button"
+                            value="Add flag">
+                    </p>
+                </div>
                 <div id="productcomments">
                     <h2>Comments</h2>
                     <p>
@@ -82,6 +94,25 @@
                         value="Submit"> <input
                         id="commentaddcancel" type="button"
                         value="Cancel">
+                </p>
+            </div>
+        </div>
+        <div id="flagadd" class="page">
+            <div id="flagaddcontent" class="pagecontent">
+                <h1 id="flagaddheader">
+                    Flagging <span id="flagaddproduct">product</span>
+                </h1>
+                <p>
+                    Flagging as <span id="flagadduser">user</span>.
+                </p>
+                <p>
+                    <label for="flagaddname">Flag name: </label> <br>
+                    <input id="flagaddname" name="name" type="text"
+                           size="30" placeholder="Type flag name" />
+                </p>
+                <p>
+                    <input id="flagaddsubmit" type="button" value="Submit">
+                    <input id="flagaddcancel" type="button" value="Cancel">
                 </p>
             </div>
         </div>

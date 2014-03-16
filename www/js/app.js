@@ -24,11 +24,14 @@ define(['cordova',
 
     var scanner = cordova.require('cordova/plugin/BarcodeScanner');
 
+    // FIXME: The following globals are bad. Refactor them away.
+
     // Variable storing details about new product
     var newProductInfo = null;
-
     // Variable storing details about new comment
     var newCommentInfo = null;
+    // Variable storing details about new flag
+    var newFlagInfo = null;
 
     // Application Constructor
     function initialize() {
@@ -94,6 +97,11 @@ define(['cordova',
                 '#productimage@alt': 'name',
                 '#productimageby': 'image.by',
                 '#productimagedate': 'image.date',
+                '.productflag' : {
+                    'flag<-flags': {
+                        '.flagtext': 'flag'
+                    }
+                },
                 '.productcomment': {
                     'comment<-comments': {
                         '.commentby': 'comment.by',
@@ -158,6 +166,25 @@ define(['cordova',
                     }
 
                 });
+
+                var addFlagElement =
+                    this.domPage.querySelector('#productflagadd');
+
+                addFlagElement.addEventListener('click',function() {
+                    newFlagInfo = {
+                        productId: context.id,
+                        username: settings.getItem('username')
+                    };
+
+                    var flagContext = {
+                        product: {
+                            name: context.name
+                        },
+                        username: settings.getItem('username')
+                    };
+
+                    pageView.gotoPage('flagadd',flagContext);
+                },false);
 
                 var addCommentElement =
                     this.domPage.querySelector('#productcommentadd');
@@ -227,6 +254,51 @@ define(['cordova',
             }
 
             pageView.addPage(pageExtractor.extract('commentadd',
+                                                   template,
+                                                   onDisplay));
+        }());
+
+        // Page for adding a flag for product
+        (function() {
+            var contentSelector = pages.contentSelector('flagadd');
+            var template = pure(contentSelector).compile({
+                '#flagaddproduct': 'product.name',
+                '#flagadduser': 'username'
+            });
+
+            // Context:
+            // -product: product to which we are about to add a flag
+            // --name: product name
+            // -username: User name to be submitted as flagger
+            function onDisplay(context) {
+                var nameElement =
+                    this.domPage.querySelector('#flagaddname');
+                nameElement.addEventListener('change',function() {
+                    newFlagInfo.name = this.value;
+                });
+
+                var submitElement =
+                    this.domPage.querySelector('#flagaddsubmit');
+                submitElement.addEventListener('click',function() {
+                    server.submitFlag(newFlagInfo.productId,
+                                      newFlagInfo.name,
+                                      context.username,
+                                      onSubmitSuccess);
+                },false);
+
+                function onSubmitSuccess() {
+                    requestProductWithComments(newFlagInfo.productId,
+                                               'Flag submitted');
+                }
+
+                var cancelElement =
+                    this.domPage.querySelector('#flagaddcancel');
+                cancelElement.addEventListener('click',function() {
+                    pageView.gotoPreviousPage();
+                },false);
+            }
+
+            pageView.addPage(pageExtractor.extract('flagadd',
                                                    template,
                                                    onDisplay));
         }());
@@ -406,24 +478,32 @@ define(['cordova',
     function requestProductWithComments(productId,successMessage) {
         var productInfo;
 
-        function onSuccess(product) {
+        server.requestProductInfo(productId,onInitialSuccess,onMissing);
+
+        function onInitialSuccess(product) {
             productInfo = product;
 
+            logger.notify(logger.statusCodes.DELAY,'Fetching flags...');
+            server.requestFlags(product.id,onFlagsSuccess,onMissing);
+        }
+
+        function onFlagsSuccess(flags) {
+            productInfo.flags = flags.flags;
+
             logger.notify(logger.statusCodes.DELAY,'Fetching comments...');
-            server.requestComments(product.id,onCommentsSuccess,onMissing);
+            server.requestComments(productInfo.id,onCommentsSuccess,onMissing);
         }
 
         function onCommentsSuccess(comments) {
             productInfo.comments = comments.comments;
+
             logger.notify(logger.statusCodes.INFO,successMessage);
             pageView.gotoPage('productview',productInfo);
         }
 
         function onMissing() {
-            logger.notify(logger.statusCodes.ERROR,'No product found');
+            logger.notify(logger.statusCodes.ERROR,'Product info not found');
         }
-
-        server.requestProductInfo(productId,onSuccess,onMissing);
     }
 
     // Publish interface
