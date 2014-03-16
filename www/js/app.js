@@ -120,7 +120,43 @@ define(['cordova',
                 var productImageAddEĺement =
                     this.domPage.querySelector('#productimageadd');
                 productImageAddEĺement.addEventListener('click',function() {
-                    // TODO: Take image with camera and submit.
+                    var camera = navigator.camera;
+
+                    // Cordova options for taking the picture.
+                    var pictureOptions = {
+                        targetHeight: 640,
+                        targetWidth: 480,
+                        destinationType: camera.DestinationType.DATA_URL
+                    };
+
+                    camera.getPicture(onPicture,onPictureFail,pictureOptions);
+
+                    function onPicture(imageURI) {
+                        server.submitImage(context.id,
+                                           server.ImageTypes.JPEG,
+                                           imageURI,
+                                           settings.getItem('username'),
+                                           onImageSubmitSuccess);
+                    }
+
+                    function onPictureFail(errorMessage) {
+                        var message = 'Taking picture failed: ' + errorMessage;
+                        logger.notify(logger.statusCodes.ERROR,message);
+                    }
+
+                    function onImageSubmitSuccess() {
+                        logger.notify(logger.statusCodes.INFO,
+                                      'Image submitted');
+
+                        // FIXME: Submits the image, but does not show it. How
+                        // should this be handled? Probably by simply adding the
+                        // image to image element. Other way which is more
+                        // uniform but very wasteful on resources is to retrieve
+                        // the submitted picture from server. I guess it mostly
+                        // depends on whether the server is going to perform
+                        // modifications to the image.
+                    }
+
                 });
 
                 var addCommentElement =

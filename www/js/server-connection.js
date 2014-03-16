@@ -11,6 +11,12 @@ define(['js/server-utils'],function(utils) {
     var BARCODES_URL = '/barcodes';
     var PRODUCTS_URL = '/products';
     var COMMENTS_URL_COMPONENT = 'comments';
+    var IMAGES_URL_COMPONENT = 'images';
+
+    // Supported image types.
+    var ImageTypes = {
+        JPEG: 'image/jpeg'
+    };
 
     // Creates and initializes new server connection. Uses XMLHttpRequest
     // internally, so implementation is passed as parameter. Also needs
@@ -19,6 +25,8 @@ define(['js/server-utils'],function(utils) {
         this.XMLHttpRequest = XMLHttpRequest;
         this.logger = logger;
         this.url = url;
+
+        this.ImageTypes = ImageTypes;
     };
 
     // Products REST url
@@ -45,6 +53,17 @@ define(['js/server-utils'],function(utils) {
                '/' +
                COMMENTS_URL_COMPONENT;
         //return this.url + '/comments.cgi';
+    };
+
+    // Creates REST url for images of given product
+    ServerConnection.prototype.toImagesUrl = function (productId) {
+        return this.url +
+               PRODUCTS_URL +
+               '/' +
+                productId +
+               '/' +
+               IMAGES_URL_COMPONENT;
+        //return this.url + '/images.cgi';
     };
 
     // Requests info on given barcode from server. Result handling is
@@ -297,9 +316,9 @@ define(['js/server-utils'],function(utils) {
         }
     };
 
-    // Submits new product to server. Required data is product id,
+    // Submits new product comment to server. Required data is product id,
     // comment text and username. Callback function onSuccess is called
-    // after successful submit.
+    // after successful submit. No parameters are passed.
     //
     // Omitting on-success callback is interpreted as no-op callback.
     //
@@ -341,6 +360,61 @@ define(['js/server-utils'],function(utils) {
 
             logger.notify(logger.statusCodes.DELAY,'Submitting comment...');
             request.send(utils.toQueryString(commentInfo));
+        } catch(ex) {
+            logger.notify(logger.statusCodes.ERROR,
+                          'Internal error: ' + ex.message);
+        }
+    };
+
+    // Submits new product image to server. Required data is product id, mime
+    // type, base64 encoded image and username. Callback function onSuccess is
+    // called after successful submit. No parameters are passed.
+    //
+    // Given mimeType must be one of the supported types enumerated in
+    // ServerConnection.ImageTypes.
+    //
+    // Omitting on-success callback is interpreted as no-op callback.
+    //
+    // Errors and request progress are logger internally in this method except
+    // for code paths that end in calling the handler. It is expected to do
+    // its own logging. This allows customization of logging and notifications
+    // by caller.
+    ServerConnection.prototype.submitImage = function(productId,
+                                                      mimeType,
+                                                      imageData,
+                                                      user,
+                                                      onSuccess) {
+        onSuccess = onSuccess || function() {};
+
+        // Get explicit reference to logger as it is needed inside
+        // callback function to be executed from within XMLHttpRequest.
+        var logger = this.logger;
+
+        try {
+            var request = new this.XMLHttpRequest();
+            request.open('POST',this.toImagesUrl(productId),true);
+
+            request.onreadystatechange = function() {
+                if(request.readyState !== this.DONE) {
+                    return;
+                }
+
+                if(request.status === 201) {
+                    onSuccess();
+                } else {
+                    var message = 'Internal error: Unexpected status code ' +
+                                  request.status;
+                    logger.notify(logger.statusCodes.ERROR,message);
+                }
+            };
+
+            var imageInfo = {
+                by: user,
+                image: 'data:' + mimeType + ';base64,' + imageData
+            };
+
+            logger.notify(logger.statusCodes.DELAY,'Submitting image...');
+            request.send(utils.toQueryString(imageInfo));
         } catch(ex) {
             logger.notify(logger.statusCodes.ERROR,
                           'Internal error: ' + ex.message);
