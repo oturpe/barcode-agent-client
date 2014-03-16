@@ -414,7 +414,7 @@ define(['cordova',
         }
 
         function onCommentsSuccess(comments) {
-            productInfo.comments = comments;
+            productInfo.comments = comments.comments;
             logger.notify(logger.statusCodes.INFO,successMessage);
             pageView.gotoPage('productview',productInfo);
         }
