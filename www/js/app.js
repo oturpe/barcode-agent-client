@@ -190,14 +190,12 @@ define(['cordova',
                     this.domPage.querySelector('#productcommentadd');
 
                 addCommentElement.addEventListener('click',function() {
-                    var commentContext;
-
                     newCommentInfo = {
                         productId: context.id,
                         username: settings.getItem('username')
                     };
 
-                    commentContext = {
+                    var commentContext = {
                         product: {
                             name: context.name
                         },

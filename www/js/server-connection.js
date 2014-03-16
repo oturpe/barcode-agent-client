@@ -216,7 +216,7 @@ define(['js/server-utils'],function(utils) {
     //
     // Omitting a callback is interpreted as no-op callback.
     //
-    // Errors and request progress are logger internally in this method except
+    // Errors and request progress are logged internally in this method except
     // for code paths that end in calling the handlers. They are expected to do
     // their own logging. This allows customization of logging and notifications
     // by caller.
@@ -231,7 +231,7 @@ define(['js/server-utils'],function(utils) {
         var logger = this.logger;
 
         if (!productId) {
-            var message = 'Interal error: Called "requestProductInfo" ' +
+            var message = 'Interal error: Called "requestComments" ' +
                           'without product id';
             logger.notify(logger.statusCodes.ERROR, message);
             return;
@@ -250,9 +250,6 @@ define(['js/server-utils'],function(utils) {
                 }
 
                 if (request.status === 200) {
-                    // TEMP DEBUG >>
-                    logger.log('Got comments: ' + request.responseText);
-                    // << TEMP DEBUG
                     onFound(utils.readMongoResponse(request.responseText));
                 } else if (request.status === 404) {
                     onMissing();
