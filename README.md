@@ -21,7 +21,9 @@ $ sudo npm install -g cordova@3.0.10
 
 ### Project setup
 
-1. Update the Android platform to match your local Android SDK setup:
-```android update project -p ./platforms/android```.
-2. Compile the project and run it in connected phone: ```cordova run android```
+1. Find `android` tool from your Android SDK. If you wish, you can add it to your path.
+2. Run `android` and install everything from *Android 4.2.2 (API 17)* folder.
+3. Update the Android platform to match your local Android SDK setup:
+`android update project -p ./platforms/android`.
+4. Compile the project and run it in connected phone: `cordova run android`
 
